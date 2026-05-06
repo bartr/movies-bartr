@@ -100,6 +100,12 @@ Picked Go 1.26 + chi v5 + `log/slog` + `flag`/env. Shipped a walking skeleton: `
 - Fit check honest (yes/no): yes — recorded "proceed" with the named cut available.
 - Close complete (yes/no): yes — tests · merge · tag · memory · paragraph.
 
+**Retro (recorded post-tag, pre-session-2)**
+- Everything went very smoothly — RPI artifacts before each phase kept the work mechanical and prevented invented APIs.
+- The frame had **less than 90 minutes of real work** in it. Acceptable for session 1 (walking skeleton always under-scopes), but a signal: future frames can be more ambitious. The two scope-aligned add-ons (`src/` reorg + Traefik Ingress) confirm there was budget left.
+- Convention going forward: **record retro thoughts on the session log before pushing the next version's branch.** This keeps honest signal next to the evidence and satisfies [EXPERIMENT.md](EXPERIMENT.md) ground rule 6 (honest retros).
+- Implication for session 2: aim higher. The store + indexes are the bare minimum; coverage gates on `internal/config` were already on the parking lot — fold them in unless the fit check says cut.
+
 ---
 
 <!-- Copy the Session Template block above for each new session. -->

@@ -1,0 +1,18 @@
+# Keep the build context small.
+.git
+.github
+.copilot-tracking
+deploy
+data
+*.md
+EXPERIMENT.md
+METHODOLOGY.md
+README.md
+session-log.md
+spec.md
+test.json
+LICENSE
+Makefile
+.dockerignore
+.gitignore
+**/*_test.go

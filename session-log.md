@@ -77,28 +77,28 @@ What I built · what I decided · what matters for next time.
 - Decision: proceed (host has k3s, docker, kubectl, kustomize already)
 
 **During**
-- Drift moments:
-- Parking lot:
+- Drift moments: none — stayed in scope.
+- Parking lot: unit tests for `internal/config`; revisit `labels` selectors when multi-workload namespace lands (session 6); ServiceMonitor / NetworkPolicy / Ingress all deferred as planned.
 
 **Close ritual**
-- [ ] Tests green
-- [ ] FF-merge
-- [ ] Tag
-- [ ] Repo memory updated
-- [ ] Next session starter:
+- [x] Tests green (`go test -race ./...`; `httpapi` 100% coverage)
+- [ ] FF-merge (commit + tag local; awaiting user OK before `git push` + `gh pr ...`)
+- [ ] Tag (`git tag 0.1.0` local; push pending user OK)
+- [x] Repo memory updated (`AGENTS.md`, `IMPL-README.md`)
+- [x] Next session starter: Session 2 — infer schemas from `data/{movies,actors,ratings}.json`, build `internal/store` with indexes (by id, by genre, by year, by rating bucket, by actorId→movies, by movieId→roles), unit tests ≥80% on `store` and `config`. No HTTP API work yet.
 
-**End time:**
-**Total focus minutes:**
-**Tag shipped:**
+**End time:** 19:35
+**Total focus minutes:** ~90
+**Tag shipped:** 0.1.0 (local; awaiting push)
 
 **One-paragraph summary**
-
+Picked Go 1.26 + chi v5 + `log/slog` + `flag`/env. Shipped a walking skeleton: `/version`, `/healthz`, `/readyz` end-to-end on the host's native `k3s` via Kustomize, distroless image (3.7 MB), pod running uid 1000 with read-only root FS and ALL caps dropped. RPI artifacts written before each phase; fit check decision recorded ("proceed"); no drift. Inner-loop is `make image import deploy verify`; cycle from source change to in-cluster curl ≈ 30 s once images are cached. Next session begins at the data layer — schemas are inferred from `data/*.json` (not invented), `internal/store` lands with ≥80% coverage, `/api/*` is still off-limits.
 
 **Health signal**
-- Framing quality (1–5):
-- Drift (yes/no):
-- Fit check honest (yes/no):
-- Close complete (yes/no):
+- Framing quality (1–5): 5 — frame held end-to-end.
+- Drift (yes/no): no.
+- Fit check honest (yes/no): yes — recorded "proceed" with the named cut available.
+- Close complete (yes/no): tests · tag · memory · paragraph done; merge/push pending user OK.
 
 ---
 

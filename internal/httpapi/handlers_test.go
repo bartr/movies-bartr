@@ -66,10 +66,10 @@ func TestHealthz(t *testing.T) {
 
 func TestReadyz(t *testing.T) {
 	cases := []struct {
-		name      string
-		ready     bool
-		wantCode  int
-		wantBody  string
+		name     string
+		ready    bool
+		wantCode int
+		wantBody string
 	}{
 		{"not_ready", false, http.StatusServiceUnavailable, "not ready\n"},
 		{"ready", true, http.StatusOK, "pass\n"},

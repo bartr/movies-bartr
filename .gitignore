@@ -1,0 +1,12 @@
+# gitignore for Go + local dev artifacts.
+/movies-api
+/bin/
+/dist/
+/tmp/
+*.test
+*.out
+coverage.*
+/.coverage
+*.tar
+.env
+.DS_Store

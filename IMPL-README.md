@@ -1,0 +1,67 @@
+# Movies API — Implementation Notes (Go)
+
+> Living document for participants of the sessions+RPI experiment. Updated each session.
+>
+> Spec: [spec.md](spec.md) · Methodology: [METHODOLOGY.md](METHODOLOGY.md) · Sessions: [session-log.md](session-log.md)
+
+## Stack (Session 1)
+
+- **Language:** Go 1.26
+- **HTTP:** `net/http` + `github.com/go-chi/chi/v5`
+- **Logging:** `log/slog` (JSON handler, stdout, level via `MOVIES_LOG_LEVEL`)
+- **Config:** `flag` + env (`MOVIES_*`); precedence defaults < env < flags (spec §11)
+- **Container:** distroless `gcr.io/distroless/static-debian12:nonroot`
+- **Manifests:** Kustomize `deploy/k8s/{base,overlays/dev}` (no Helm, per spec §8)
+- **Local k8s:** native `k3s` on the host
+
+## Layout
+
+```
+cmd/movies-api/         entrypoint
+internal/config/        flag/env config
+internal/httpapi/       chi router + handlers
+internal/version/       embedded semver
+deploy/k8s/base/        ns + deployment + service + kustomization
+deploy/k8s/overlays/dev seam for dev-only resources (Prometheus etc. land here)
+data/                   source-of-truth JSON (mounted/baked in later sessions)
+.copilot-tracking/      RPI artifacts (research/plan/changes/review)
+```
+
+## Inner loop (§12)
+
+```bash
+make test          # 1. unit tests
+make image         # 2. docker build (sets VERSION via build arg + ldflags)
+make import        # 3. docker save | k3s ctr images import   (no registry needed)
+make deploy        # 4. kustomize build | kubectl apply  (waits for rollout)
+make verify        # 5. port-forward + curl /version /healthz /readyz
+```
+
+To bump the version, override `VERSION`:
+
+```bash
+make image import deploy verify VERSION=0.1.1
+```
+
+## What's done (tag 0.1.0)
+
+- `/version` (plaintext semver), `/healthz` (plaintext `pass`), `/readyz` (gates on synthetic ready flag).
+- Distroless image, runs as uid 1000, read-only root FS, all caps dropped, no privilege escalation, `automountServiceAccountToken: false`.
+- Liveness + readiness probes wired to the right endpoints.
+- Resource requests/limits per spec §8.1.
+
+## What's deferred
+
+See [session-log.md](session-log.md) for the per-session frame. Headline:
+
+| Tag    | Adds                                                       |
+|--------|------------------------------------------------------------|
+| 0.2.0  | Data layer (JSON loader, in-memory store + indexes)        |
+| 0.3.0  | Read API happy paths                                       |
+| 0.4.0  | Validation (`application/problem+json`)                    |
+| 0.5.0  | OpenAPI + Swagger UI + JSON logs review                    |
+| 0.6.0  | Prometheus metrics + Operator + ServiceMonitor + NetPol    |
+| 0.7.0  | Grafana + provisioned dashboard                            |
+| 0.8.0  | Web Validate suite + documented inner loop                 |
+| 0.9.0  | Benchmarks (p95 + 500 RPS)                                 |
+| 1.0.0  | §14 acceptance run + RETRO.md                              |

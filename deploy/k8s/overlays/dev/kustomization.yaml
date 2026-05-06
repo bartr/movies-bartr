@@ -1,0 +1,8 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - ../../base
+
+# Dev overlay is currently identical to base. Kept as a seam for later
+# sessions (Prometheus, Grafana, NetworkPolicy live here).

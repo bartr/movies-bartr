@@ -56,25 +56,25 @@ What I built · what I decided · what matters for next time.
 
 ---
 
-## Session 1 — [date]
+## Session 1 — 2026-05-06
 
 **Frame**
-- Goal:
-- Out of scope:
-- Failure condition:
+- Goal: Walking skeleton in Go. Pick stack (Go + chi + slog + standard `net/http`), scaffold module, ship `/version`, `/healthz`, `/readyz` end-to-end on local k3s via Kustomize. Distroless multi-stage image, non-root (uid 1000), read-only root FS. Tag `0.1.0`.
+- Out of scope: `/api/*` endpoints, data loading, validation, metrics, Prometheus/Grafana, OpenAPI/Swagger, NetworkPolicy, ServiceMonitor, benchmarks, Web Validate suite.
+- Failure condition: image not running non-root with RO root FS; `/version` not returning a plain semver; cluster-side verification of all three endpoints not demonstrated; or scope creep into anything in "out of scope".
 
-**Start time:**
+**Start time:** 18:05
 
 **RPI cycle**
-- Research:
-- Plan:
-- Changes:
-- Review:
+- Research: `.copilot-tracking/2026-05-06-stack-research.md`
+- Plan: `.copilot-tracking/2026-05-06-skeleton-plan.md`
+- Changes: `.copilot-tracking/2026-05-06-skeleton-changes.md`
+- Review: `.copilot-tracking/2026-05-06-skeleton-review.md`
 
 **Fit check**
-- Will this plan fit in 90–120 min?
-- Smallest cut if no:
-- Decision:
+- Will this plan fit in 90–120 min? yes
+- Smallest cut if no: drop k3s deploy verification; ship Dockerfile + manifests un-applied
+- Decision: proceed (host has k3s, docker, kubectl, kustomize already)
 
 **During**
 - Drift moments:

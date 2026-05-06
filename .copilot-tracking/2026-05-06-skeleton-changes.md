@@ -37,3 +37,9 @@
 - Replaced deprecated `commonLabels` with `labels:` form in `kustomization.yaml` after `kustomize` warned. No semantic change.
 - Added an `emptyDir` mount at `/tmp` proactively (plan listed it as conditional). Cost is zero and removes a class of "RO root FS" surprises later.
 - Left `automountServiceAccountToken: false` in the pod spec; not in the plan but it is a free hardening win and aligns with §13.
+
+## Post-skeleton additions (still inside the session frame)
+
+- **Repo reorg.** Moved Go module + Dockerfile + `data/` under `src/`; Makefile stayed at repo root. `src/.dockerignore` rewritten now that the build context is just `src/`. Image rebuilt + redeployed; smoke + cluster verify green.
+- **Traefik Ingress.** Added `deploy/k8s/base/ingress.yaml` (host `localhost`, path `/`, ingressClassName `traefik`) and registered it in the base kustomization. k3s's bundled Traefik already listens on host port 80, so end-to-end verify is now `curl http://localhost/version` (no port-forward).
+- **Makefile.** Replaced the port-forward `verify` with one that hits Traefik on `127.0.0.1:80` with `Host: localhost`.

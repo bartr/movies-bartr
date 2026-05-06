@@ -77,28 +77,28 @@ What I built · what I decided · what matters for next time.
 - Decision: proceed (host has k3s, docker, kubectl, kustomize already)
 
 **During**
-- Drift moments: none — stayed in scope.
-- Parking lot: unit tests for `internal/config`; revisit `labels` selectors when multi-workload namespace lands (session 6); ServiceMonitor / NetworkPolicy / Ingress all deferred as planned.
+- Drift moments: none in scope. Two scope-aligned add-ons accepted *after* the walking skeleton was green: a repo reorg into `src/` (housekeeping) and a Traefik Ingress on host port 80 mapping `localhost` → `movies-api` (cuts a port-forward out of every future verify cycle). Both rebuilt + redeployed cleanly.
+- Parking lot: unit tests for `internal/config`; revisit `labels` selectors when multi-workload namespace lands (session 6); ServiceMonitor / NetworkPolicy deferred as planned.
 
 **Close ritual**
 - [x] Tests green (`go test -race ./...`; `httpapi` 100% coverage)
-- [ ] FF-merge (commit + tag local; awaiting user OK before `git push` + `gh pr ...`)
-- [ ] Tag (`git tag 0.1.0` local; push pending user OK)
+- [x] FF-merge (branch `session/0.1.0-skeleton` → `main`)
+- [x] Tag `0.1.0` (re-tagged at HEAD after src/ reorg + ingress)
 - [x] Repo memory updated (`AGENTS.md`, `IMPL-README.md`)
-- [x] Next session starter: Session 2 — infer schemas from `data/{movies,actors,ratings}.json`, build `internal/store` with indexes (by id, by genre, by year, by rating bucket, by actorId→movies, by movieId→roles), unit tests ≥80% on `store` and `config`. No HTTP API work yet.
+- [x] Next session starter: Session 2 — infer schemas from `src/data/{movies,actors,ratings}.json`, build `internal/store` with indexes (by id, by genre, by year, by rating bucket, by actorId→movies, by movieId→roles), unit tests ≥80% on `store` and `config`. No HTTP API work yet.
 
-**End time:** 19:35
-**Total focus minutes:** ~90
-**Tag shipped:** 0.1.0 (local; awaiting push)
+**End time:** 19:55
+**Total focus minutes:** ~110
+**Tag shipped:** 0.1.0
 
 **One-paragraph summary**
-Picked Go 1.26 + chi v5 + `log/slog` + `flag`/env. Shipped a walking skeleton: `/version`, `/healthz`, `/readyz` end-to-end on the host's native `k3s` via Kustomize, distroless image (3.7 MB), pod running uid 1000 with read-only root FS and ALL caps dropped. RPI artifacts written before each phase; fit check decision recorded ("proceed"); no drift. Inner-loop is `make image import deploy verify`; cycle from source change to in-cluster curl ≈ 30 s once images are cached. Next session begins at the data layer — schemas are inferred from `data/*.json` (not invented), `internal/store` lands with ≥80% coverage, `/api/*` is still off-limits.
+Picked Go 1.26 + chi v5 + `log/slog` + `flag`/env. Shipped a walking skeleton: `/version`, `/healthz`, `/readyz` end-to-end on the host's native `k3s`, fronted by the bundled Traefik Ingress on host port 80 with host `localhost`. Distroless image (~3.7 MB), pod runs uid 1000 with read-only root FS and ALL caps dropped. Repo organized as `src/` (Go module + Dockerfile + data) and `deploy/k8s/{base,overlays/dev}` (Kustomize), with a root `Makefile` driving the inner loop: `make image import deploy verify`. RPI artifacts written before each phase; fit check decision recorded ("proceed"); zero in-scope drift. End-to-end verify is now a single `curl http://localhost/version`. Next session is the data layer — schemas inferred from `src/data/*.json` (not invented), `internal/store` with ≥80% coverage, `/api/*` still off-limits.
 
 **Health signal**
 - Framing quality (1–5): 5 — frame held end-to-end.
 - Drift (yes/no): no.
 - Fit check honest (yes/no): yes — recorded "proceed" with the named cut available.
-- Close complete (yes/no): tests · tag · memory · paragraph done; merge/push pending user OK.
+- Close complete (yes/no): yes — tests · merge · tag · memory · paragraph.
 
 ---
 

@@ -17,14 +17,18 @@
 ## Layout
 
 ```
-cmd/movies-api/         entrypoint
-internal/config/        flag/env config
-internal/httpapi/       chi router + handlers
-internal/version/       embedded semver
-deploy/k8s/base/        ns + deployment + service + kustomization
-deploy/k8s/overlays/dev seam for dev-only resources (Prometheus etc. land here)
-data/                   source-of-truth JSON (mounted/baked in later sessions)
-.copilot-tracking/      RPI artifacts (research/plan/changes/review)
+src/                       Go module + Dockerfile + data
+  cmd/movies-api/          entrypoint
+  internal/config/         flag/env config
+  internal/httpapi/        chi router + handlers
+  internal/version/        embedded semver
+  data/                    source-of-truth JSON (baked into image, spec §5.2)
+  Dockerfile               multi-stage; build context is ./src
+  go.mod, go.sum
+deploy/k8s/base/           ns + deployment + service + kustomization
+deploy/k8s/overlays/dev    seam for dev-only resources (Prometheus etc.)
+.copilot-tracking/         RPI artifacts (research/plan/changes/review)
+Makefile                   inner-loop wrapper (run from repo root)
 ```
 
 ## Inner loop (§12)
@@ -35,6 +39,15 @@ make image         # 2. docker build (sets VERSION via build arg + ldflags)
 make import        # 3. docker save | k3s ctr images import   (no registry needed)
 make deploy        # 4. kustomize build | kubectl apply  (waits for rollout)
 make verify        # 5. port-forward + curl /version /healthz /readyz
+```
+
+Once deployed, Traefik (bundled with k3s, listening on host port 80) routes
+`localhost` → the `movies-api` Service:
+
+```bash
+curl http://localhost/version    # 0.1.0
+curl http://localhost/healthz    # pass
+curl http://localhost/readyz     # pass
 ```
 
 To bump the version, override `VERSION`:

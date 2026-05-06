@@ -1,0 +1,5 @@
+# Build context is the ./src directory. Keep it lean. Note: do NOT exclude
+# data/ — session 2 onward bakes data/ into the image (spec §5.2).
+.git
+**/*_test.go
+.dockerignore

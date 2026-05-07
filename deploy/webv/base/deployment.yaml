@@ -32,7 +32,7 @@ spec:
           command: ["/webv"]
           args:
             - --url=http://movies-api.movies.svc.cluster.local:8080
-            - --files=/webv-suites/benchmark.json
+            - --files=/webv-suites/benchmark.yaml
             - --loop
             - --threads=2
           resources:

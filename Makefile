@@ -41,7 +41,7 @@ help:
 	@echo "  grafana-undeploy      - delete Grafana"
 	@echo "  traefik-apply         - apply Traefik HelmChartConfig (entrypoints)"
 	@echo "  webv-install          - go install webv to ~/go/bin (with version ldflags)"
-	@echo "  webv-smoke            - run webv against http://127.0.0.1 with src/webv/test.json"
+	@echo "  webv-smoke            - run webv against http://127.0.0.1 with src/webv/test.yaml"
 	@echo "  webv-deploy           - apply webv Job (movies ns)"
 	@echo "  webv-verify           - tail webv pod logs and confirm passes"
 	@echo "  webv-undeploy         - delete webv overlay"
@@ -214,7 +214,7 @@ webv-install:
 	@command -v webv >/dev/null && webv --version || echo "webv installed; ensure ~/go/bin is on PATH"
 
 webv-smoke:
-	webv --url http://127.0.0.1 --files $(SRC)/webv/test.json --threads 2 --verbose | tail -20
+	webv --url http://127.0.0.1 --files $(SRC)/webv/test.yaml --threads 2 --verbose | tail -20
 
 webv-deploy:
 	kustomize build $(WEBV_DIR) | $(KCTL) apply -f -

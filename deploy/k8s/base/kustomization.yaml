@@ -8,6 +8,8 @@ resources:
   - deployment.yaml
   - service.yaml
   - ingress.yaml
+  - servicemonitor.yaml
+  - networkpolicy.yaml
 
 labels:
   - includeSelectors: false

@@ -206,4 +206,50 @@ Wired `internal/store` to HTTP. `/api/movies`, `/api/movies/{id}`, `/api/actors`
 
 ---
 
+## Session 6 — 2026-05-07
+
+**Frame**
+- Goal: Ship Prometheus metrics on `/metrics` (idiomatic `prometheus/client_golang`), wired into the existing in-cluster Prometheus Operator via a `ServiceMonitor` labeled `monitoring.coreos.com/instance: prometheus`. Add a `default-deny` + targeted-allow NetworkPolicy pair for the `movies` namespace. Tighten the container `securityContext` (container-level seccompProfile + explicit runAsGroup). Tag `0.6.0`.
+- Out of scope: Grafana dashboards (deferred); repairing the pre-existing `default/prometheus` pod that's stuck 0/1; Web Validate runner; benchmarks.
+- Failure condition: `/metrics` not exposing instrumentation for the chi routes; `ServiceMonitor` label doesn't match the cluster Prometheus's selector; NetworkPolicy blocks Traefik or Prometheus scrape; tests not green; or scope creep into Grafana.
+
+**Start time:** 02:43 UTC
+
+**RPI cycle**
+- Research: `.copilot-tracking/2026-05-07-metrics-research.md`
+- Plan: `.copilot-tracking/2026-05-07-metrics-plan.md`
+- Changes: `.copilot-tracking/2026-05-07-metrics-changes.md`
+- Review: `.copilot-tracking/2026-05-07-metrics-review.md`
+
+**Fit check**
+- Will this plan fit in 90–120 min? yes.
+- Smallest cut if no: drop NetworkPolicy to a follow-up; metrics + ServiceMonitor are the headline.
+- Decision: proceed.
+
+**During**
+- Drift moments: none. One non-frame surprise: first `make verify` after deploy hit a 502 Traefik bad-gateway in the rolling-update window between old/new endpoints; second pass was clean. Recorded as a parking-lot polish item, not in-scope to fix here.
+- Parking lot: add a small retry loop around `make verify` to absorb the rolling-update window; consider exposing `/metrics` on a separate port (spec §8.1 allows 9090) so NetworkPolicy can scope public ingress narrower than scrape ingress; restore the cluster `default/prometheus` instance (currently 0/1 ready, pre-existing).
+
+**Close ritual**
+- [x] Tests green (`go test -race ./...`; `internal/httpapi` 92.7 %)
+- [x] FF-merge (`gh pr merge --rebase --delete-branch`)
+- [x] Tag (`git tag 0.6.0 && git push origin 0.6.0`)
+- [x] Repo memory updated (AGENTS.md + IMPL-README.md)
+- [x] Next session starter: Session 7 — Grafana + provisioned datasource + provisioned dashboard reading `http_requests_total` / `http_request_duration_seconds` from the cluster Prometheus. Restoring the 0/1 `default/prometheus` instance is a tactical pre-step. Next slice after that is the Web Validate runner.
+
+**End time:** 02:55 UTC
+**Total focus minutes:** ~12
+**Tag shipped:** 0.6.0
+
+**One-paragraph summary**
+Shipped Prometheus metrics end-to-end. `internal/httpapi/metrics.go` builds a per-router `*prometheus.Registry`, registers Go + process collectors plus three application vectors (`http_requests_total`, `http_request_duration_seconds`, `http_requests_in_flight`), and a chi-aware middleware records requests using `chi.RouteContext(...).RoutePattern()` so the `route` label is the templated path (`/api/movies/{id}`) — cardinality stays bounded and raw IDs never leak. `/metrics` is mounted on the same 8080 port and skipped from the JSON request log. A `ServiceMonitor` labeled `monitoring.coreos.com/instance: prometheus` matches the existing cluster Prometheus's selector, so scraping wires up automatically. A `default-deny` + `movies-api` `NetworkPolicy` pair locks the namespace down to ingress on TCP 8080 from `kube-system` (Traefik) and `default` (Prometheus) plus DNS egress. The container `securityContext` got an explicit `runAsGroup: 1000` and `seccompProfile: RuntimeDefault` so the Pod Security Admission "restricted" check passes at the container level too. Verified in-cluster via the inner loop; a single rolling-update 502 on first verify cleared on retry. `make verify` now also asserts `/metrics` returns the `http_requests_total` HELP line and the `go_goroutines` gauge so an instrumentation regression breaks the loop. `internal/httpapi` coverage 91.2 → 92.7 %.
+
+**Health signal**
+- Framing quality (1–5): 5 — frame named four deliverables (metrics, Operator wiring, NetworkPolicy, securityContext review), all four shipped, Grafana stayed out of scope as declared.
+- Drift (yes/no): no.
+- Fit check honest (yes/no): yes — `NetworkPolicy` was the named cut and didn't have to be invoked.
+- Close complete (yes/no): yes — tests · merge · tag · memory · paragraph.
+
+---
+
 <!-- Copy the Session Template block above for each new session. -->

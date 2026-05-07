@@ -1,0 +1,68 @@
+# Two-policy pattern for the movies namespace:
+#
+#   1. default-deny  — selects every pod in the namespace and drops all
+#      ingress + egress traffic.
+#   2. movies-api    — narrowly re-allows only what the workload needs:
+#        ingress  : TCP 8080 from kube-system (Traefik) and default
+#                   (Prometheus operator scrape).
+#        egress   : DNS (UDP+TCP 53) to kube-system.
+#
+# The `kubernetes.io/metadata.name` label is set automatically by the
+# kube-apiserver on every Namespace, so namespace selectors stay portable.
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny
+  namespace: movies
+  labels:
+    app.kubernetes.io/name: movies-api
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+    - Egress
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: movies-api
+  namespace: movies
+  labels:
+    app.kubernetes.io/name: movies-api
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: movies-api
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    # Traefik ingress controller (k3s ships it in kube-system).
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+      ports:
+        - protocol: TCP
+          port: 8080
+    # Prometheus operator scrape (the cluster Prometheus runs in default).
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: default
+      ports:
+        - protocol: TCP
+          port: 8080
+  egress:
+    # Cluster DNS — required for any name resolution. The service itself
+    # makes no other outbound calls.
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53

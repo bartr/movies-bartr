@@ -1,0 +1,22 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: movies-api
+  namespace: movies
+  labels:
+    app.kubernetes.io/name: movies-api
+    # Picked up by the cluster Prometheus instance whose
+    # serviceMonitorSelector matches this label.
+    monitoring.coreos.com/instance: prometheus
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: movies-api
+  namespaceSelector:
+    matchNames:
+      - movies
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 30s
+      scheme: http

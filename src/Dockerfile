@@ -13,7 +13,7 @@ RUN go mod download
 COPY cmd ./cmd
 COPY internal ./internal
 
-ARG VERSION=0.3.0
+ARG VERSION=0.6.0
 ENV CGO_ENABLED=0 GOOS=linux GOARCH=amd64
 
 RUN go build \

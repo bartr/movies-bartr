@@ -1,7 +1,7 @@
 # movies-api Makefile — minimal wrapper around the inner-loop steps
 # documented in IMPL-README.md. Each target is independently runnable.
 
-VERSION ?= 0.5.0
+VERSION ?= 0.6.0
 IMAGE   ?= movies-api:$(VERSION)
 TARBALL ?= /tmp/movies-api-$(VERSION).tar
 KCTL    ?= sudo k3s kubectl
@@ -55,7 +55,12 @@ verify verify-ingress:
 		curl -sS -H "Host: localhost" http://127.0.0.1/healthz | tee /dev/stderr | grep -qx "pass" || (echo "FAIL: /healthz"; exit 1); \
 		echo "--- /readyz ---"; \
 		curl -sS -H "Host: localhost" http://127.0.0.1/readyz | tee /dev/stderr | grep -qx "pass" || (echo "FAIL: /readyz"; exit 1); \
-		echo "OK: all three endpoints verified via Traefik on http://localhost"; \
+		echo "--- /metrics ---"; \
+		M=$$(curl -sS -H "Host: localhost" http://127.0.0.1/metrics); \
+		echo "$$M" | head -3; \
+		echo "$$M" | grep -q "^# HELP http_requests_total" || (echo "FAIL: /metrics missing http_requests_total"; exit 1); \
+		echo "$$M" | grep -q "^go_goroutines " || (echo "FAIL: /metrics missing go_goroutines"; exit 1); \
+		echo "OK: all endpoints verified via Traefik on http://localhost"; \
 	'
 
 clean:

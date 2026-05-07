@@ -193,8 +193,18 @@ The implementation README must walk a new contributor through the following step
 
 - Performance targets:
   - p95 `/api/movies` < 50 ms in-cluster
+  - p95 `/api/actors` < 50 ms in-cluster
+  - p95 `/api/genres` < 50 ms in-cluster
   - p95 `/api/movies/{id}` < 10 ms
+  - p95 `/api/actors/{id}` < 10 ms
   - Sustained 500 RPS on a single 500m-CPU pod with < 1% error rate
+
+> Measured (0.9.0, in-cluster, 1m window, single 500m pod): list-route
+> p95 ≈ 0.20 ms, detail-route p95 ≈ 0.10 ms — between **50× and 500×**
+> under target. Sustained 800 RPS observed with 0% 5xx. Go's
+> in-process map lookups + a per-router Prometheus registry are
+> doing the heavy lifting here; there is no caching layer. See
+> [docs/PERFORMANCE.md](PERFORMANCE.md) for the evidence run.
 
 ## 11. Configuration
 

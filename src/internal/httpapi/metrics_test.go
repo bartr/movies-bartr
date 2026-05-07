@@ -13,6 +13,9 @@ func TestMetricsEndpoint_Exposes(t *testing.T) {
 	if rr := do(t, r, "/api/genres"); rr.Code != http.StatusOK {
 		t.Fatalf("seed /api/genres: %d", rr.Code)
 	}
+	if rr := do(t, r, "/api/movies"); rr.Code != http.StatusOK {
+		t.Fatalf("seed /api/movies: %d", rr.Code)
+	}
 	if rr := do(t, r, "/api/movies/tt12345"); rr.Code != http.StatusNotFound {
 		t.Fatalf("seed /api/movies/{id}: %d", rr.Code)
 	}
@@ -31,9 +34,12 @@ func TestMetricsEndpoint_Exposes(t *testing.T) {
 		`http_requests_total`,
 		`http_request_duration_seconds_bucket`,
 		`http_requests_in_flight`,
-		// Two-level route labels — the {id} segment is dropped so
-		// /api/movies/{id} and /api/movies both record as /api/movies.
+		// List + detail route templates are emitted as separate
+		// label values so list and detail latency can be observed
+		// independently. Cardinality stays bounded because the {id}
+		// segment is templated, not raw.
 		`route="/api/movies"`,
+		`route="/api/movies/{id}"`,
 		`route="/api/genres"`,
 		`code="200"`,
 		`code="404"`,
@@ -45,9 +51,8 @@ func TestMetricsEndpoint_Exposes(t *testing.T) {
 			t.Errorf("missing %q in /metrics output", want)
 		}
 	}
-	// Cardinality guards: raw ids must never become labels, and the
-	// templated `{id}` segment must not leak through either.
-	for _, banned := range []string{`tt12345`, `{id}`} {
+	// Cardinality guard: raw ids must never become labels.
+	for _, banned := range []string{`tt12345`} {
 		if strings.Contains(got, banned) {
 			t.Errorf("/metrics leaked %q into labels (cardinality bug)", banned)
 		}
@@ -114,10 +119,12 @@ func TestAPIRouteLabel(t *testing.T) {
 		wantOK  bool
 	}{
 		{"/api/movies", "/api/movies", true},
-		{"/api/movies/tt0133093", "/api/movies", true},
+		{"/api/movies/tt0133093", "/api/movies/{id}", true},
 		{"/api/movies/", "/api/movies", true},
-		{"/api/actors/nm0000206", "/api/actors", true},
+		{"/api/actors/nm0000206", "/api/actors/{id}", true},
+		{"/api/actors", "/api/actors", true},
 		{"/api/genres", "/api/genres", true},
+		{"/api/genres/anything", "/api/genres", true},
 		{"/api/", "", false},
 		{"/api", "", false},
 		{"/healthz", "", false},

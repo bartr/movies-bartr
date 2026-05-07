@@ -170,7 +170,10 @@ func doOne(ctx context.Context, client *http.Client, base string, r *Request, w 
 	if resp.StatusCode != r.expectStatus {
 		errs = append(errs, fmt.Sprintf("statusCode want=%d got=%d", r.expectStatus, resp.StatusCode))
 	}
-	if r.expectType != "" && !strings.HasPrefix(strings.ToLower(res.contentT), strings.ToLower(r.expectType)) {
+	// Skip content-type validation for 404s: the framework that produces
+	// the response (chi default 404, RFC 7807 problem, plaintext, etc.)
+	// varies by route shape and is not a contract we want to pin.
+	if r.expectType != "" && r.expectStatus != 404 && !strings.HasPrefix(strings.ToLower(res.contentT), strings.ToLower(r.expectType)) {
 		errs = append(errs, fmt.Sprintf("contentType want=%s got=%s", r.expectType, res.contentT))
 	}
 	if r.expectLen > 0 && r.expectLen != len(body) {

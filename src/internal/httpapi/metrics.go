@@ -5,7 +5,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/go-chi/chi/v5"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/collectors"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -65,11 +64,18 @@ func (m *metrics) handler() http.Handler {
 	})
 }
 
-// middleware records request count, duration, and in-flight gauge for every
-// request that flows through the router. The route label is the chi
-// templated pattern (e.g. "/api/movies/{id}"), not the raw URL — that keeps
-// label cardinality bounded. Requests that don't match any route are
-// labeled "unmatched".
+// middleware records request count, duration, and in-flight gauge for
+// every `/api/*` request. Anything outside `/api/` (`/metrics`,
+// `/healthz`, `/readyz`, `/version`, `/swagger/*`, `/`, `robots.txt`,
+// 404s on unrouted paths) is intentionally not measured: the dashboard
+// surfaces business traffic, and operational endpoints would dominate
+// the timeseries on an idle service.
+//
+// The route label is collapsed to the first two path segments — so
+// `/api/movies/{id}` and `/api/movies` both record as `/api/movies`,
+// and `/api/actors/{id}` collapses to `/api/actors`. That keeps label
+// cardinality bounded (one series per top-level resource) and matches
+// the granularity a business dashboard cares about.
 func (m *metrics) middleware() func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -80,15 +86,37 @@ func (m *metrics) middleware() func(http.Handler) http.Handler {
 			rec := &statusRecorder{ResponseWriter: w, status: http.StatusOK}
 			next.ServeHTTP(rec, r)
 
-			route := "unmatched"
-			if rc := chi.RouteContext(r.Context()); rc != nil {
-				if p := rc.RoutePattern(); p != "" {
-					route = p
-				}
+			route, ok := apiRouteLabel(r.URL.Path)
+			if !ok {
+				return
 			}
 			code := strconv.Itoa(rec.status)
 			m.requests.WithLabelValues(r.Method, route, code).Inc()
 			m.durations.WithLabelValues(r.Method, route, code).Observe(time.Since(start).Seconds())
 		})
 	}
+}
+
+// apiRouteLabel returns the two-level route label for a request path
+// and a bool indicating whether the request should be measured at all.
+// Only paths beginning with `/api/` are measured; the returned label is
+// the first two segments (`/api/movies`, `/api/actors`, `/api/genres`).
+func apiRouteLabel(path string) (string, bool) {
+	if len(path) < len("/api/") || path[:5] != "/api/" {
+		return "", false
+	}
+	// path[5:] is everything after "/api/". Split on the first '/'
+	// (or end-of-string) to get the resource segment.
+	rest := path[5:]
+	for i := 0; i < len(rest); i++ {
+		if rest[i] == '/' {
+			rest = rest[:i]
+			break
+		}
+	}
+	if rest == "" {
+		// "/api/" by itself — not a real resource. Skip.
+		return "", false
+	}
+	return "/api/" + rest, true
 }

@@ -159,4 +159,51 @@ Built `internal/store` with all six required indexes (id, genre, year, rating bu
 
 ---
 
+## Session 3 — 2026-05-07
+
+**Frame**
+- Goal: Combine sessions 3 and 4 (per session-2 retro: frame to fill the budget). Wire `internal/store` to HTTP. Implement happy paths for `/api/movies`, `/api/movies/{id}`, `/api/actors`, `/api/actors/{id}`, `/api/genres`. Implement full query-param + path-id validation per `test.json` (page bounds, q length, genre length, year/rating ranges, id regex with not-all-zero rule) returning RFC 7807 `application/problem+json`. Integration tests via `httptest`, one negative case per validation rule mirroring `test.json`. Coverage ≥ 80% on `internal/httpapi`. Update spec §6 to match the rules `test.json` actually enforces.
+- Out of scope: OpenAPI / Swagger UI, Prometheus metrics, ServiceMonitor, NetworkPolicy, Grafana dashboards, Web Validate runner. Pagination metadata envelope (responses are bare arrays for now, sliced by page).
+- Failure condition: any happy-path response shape diverges from store types; `test.json` negative case not covered by a unit test; coverage <80% on `internal/httpapi`; spec left contradicting `test.json`; or anything from "out of scope" landing in the diff.
+
+**Start time:** 02:20 UTC
+
+**RPI cycle**
+- Research: `.copilot-tracking/2026-05-07-read-api-research.md`
+- Plan: `.copilot-tracking/2026-05-07-read-api-plan.md`
+- Changes: `.copilot-tracking/2026-05-07-read-api-changes.md`
+- Review: `.copilot-tracking/2026-05-07-read-api-review.md`
+
+**Fit check**
+- Will this plan fit in 90–120 min? yes — bundled sessions 3+4 because each alone was a 15-min frame.
+- Smallest cut if no: ship handlers + happy-path tests; defer the negative-case table to a follow-up.
+- Decision: proceed.
+
+**During**
+- Drift moments: none. Two side-effects required to ship end-to-end: bumping the deployment image tag (was still pinned to `0.1.0`) and baking `data/` into the runtime image (`COPY data /data`) — both were prerequisites the in-cluster verify forced honest, not new scope.
+- Parking lot: pagination envelope (`{ items, page, pageSize, total }`) when OpenAPI lands; reject repeated query params strictly instead of taking `Get`'s first; consider `kustomize edit set image` instead of editing `deployment.yaml` directly when sessions start touching multiple overlays.
+
+**Close ritual**
+- [x] Tests green (`make test` race-clean; `internal/httpapi` 91.2 %).
+- [x] In-cluster verify (`make verify VERSION=0.3.0` — `/version` `0.3.0`, `/healthz` and `/readyz` `pass`; live spot-checks of `/api/genres`, `/api/movies?year=1999`, `/api/movies?q=a` 400 problem+json, `/api/movies/tt0133093`).
+- [x] FF-merge (`gh pr merge --rebase --delete-branch`)
+- [x] Tag (`git tag 0.3.0 && git push origin 0.3.0`)
+- [x] Repo memory updated (AGENTS.md + IMPL-README.md).
+- [x] Next session starter: Session 4 — pick OpenAPI + Swagger UI (spec §6 routes `/`, `/swagger`, `/swagger/v1/swagger.json`) **or** Prometheus metrics + `ServiceMonitor` + NetworkPolicy. Bundle adjacent slices to fill 90–120 min; cut at the fit check.
+
+**End time:** 02:31 UTC
+**Total focus minutes:** ~70
+**Tag shipped:** 0.3.0
+
+**One-paragraph summary**
+Wired `internal/store` to HTTP. `/api/movies`, `/api/movies/{id}`, `/api/actors`, `/api/actors/{id}`, `/api/genres` are live with full validation: `pageNumber [1,10000]`, `pageSize [1,1000]`, `q [2,20]`, `genre [3,20]`, `year [1874,2025]`, `rating [0,10]`, `^tt\d{5,9}$` / `^nm\d{5,9}$` plus a not-all-zero clause forced by `test.json` (`tt12345` 404s, `tt00000` 400s). Errors are RFC 7807 `application/problem+json`. One negative test per rule mirroring `test.json`; `internal/httpapi` coverage 91.2 % with `-race`. Spec §6 was updated to record the rules the tests actually enforce — including the not-all-zero clause and the frozen `year` window. The image now bakes `data/` at `/data` (deferred step from session 2) and the deployment image tag bumped to `0.3.0`; in-cluster verify passes through Traefik on `localhost`.
+
+**Health signal**
+- Framing quality (1–5): 4 — bundle of sessions 3+4 was the right size; spec gaps (year bounds, not-all-zero rule) surfaced naturally during validator coding rather than after the fact.
+- Drift (yes/no): no. The image-tag + data-bake edits were forced by the in-cluster verify step in the frame.
+- Fit check honest (yes/no): yes — recorded "proceed" knowing the cut list (defer the negative-case table) was a real fallback.
+- Close complete (yes/no): yes — tests · merge · tag · memory · paragraph.
+
+---
+
 <!-- Copy the Session Template block above for each new session. -->

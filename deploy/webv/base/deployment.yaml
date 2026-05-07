@@ -34,7 +34,8 @@ spec:
             - --url=http://movies-api.movies.svc.cluster.local:8080
             - --files=/webv-suites/benchmark.yaml
             - --loop
-            - --threads=2
+            - --threads=1
+            - --verbose
           resources:
             requests:
               cpu: "50m"

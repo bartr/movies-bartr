@@ -34,8 +34,16 @@ spec:
             - --url=http://movies-api.movies.svc.cluster.local:8080
             - --files=/webv-suites/benchmark.yaml
             - --loop
-            - --threads=1
-            - --sleep=1
+            - --threads=2
+            # Tuned to land sustained throughput just over the spec
+            # §10.4 target of 500 RPS. The kernel timer slice on the
+            # host quantizes Go time.Sleep to ~1 ms, which means
+            # single-thread RPS jumps in big steps (800 / 428 / 293)
+            # with no value near 500. Two threads at sleep=3ms give
+            # ~584 RPS sustained, 0% 5xx, comfortably above target
+            # without saturating the 500m-CPU pod. See
+            # docs/PERFORMANCE.md for the math.
+            - --sleep=3ms
             - --verbose
           resources:
             requests:

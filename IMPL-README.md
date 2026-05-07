@@ -92,7 +92,7 @@ CLI flags (each has a short alias):
 | `--threads` `-t`       | concurrent worker goroutines (default 1)                 |
 | `--random`  `-r`       | shuffle requests each pass                               |
 | `--duration` `-d`      | total run time (`30s`, `5m`, `24h`); takes precedence over `--loop` |
-| `--sleep`   `-s`       | sleep N ms between calls on each thread (rate cap)       |
+| `--sleep`   `-s`       | sleep DURATION between calls on each thread (`400us`, `1ms`, `250ms`); rate cap |
 | `--verbose` `-v`       | log successes too (failures always logged)               |
 | `--version`            | print the shared semver and exit                         |
 
@@ -102,7 +102,7 @@ Output is one tab-delimited record per logged request plus a
 
 The same Dockerfile bakes both `/movies-api` and `/webv` into the image
 along with the suites at `/webv-suites/`, so the in-cluster Deployment
-([deploy/webv](deploy/webv)) is just `image: movies-api:0.8.0` with
+([deploy/webv](deploy/webv)) is just `image: movies-api:0.9.0` with
 `command: ["/webv"]`. webv targets the in-cluster movies-api Service
 (`http://movies-api.movies.svc.cluster.local:8080`) and runs in a loop;
 it always exits 0 on signal so K8s does not flag it as failed.
@@ -110,19 +110,23 @@ it always exits 0 on signal so K8s does not flag it as failed.
 #### Tuning the live load generator without a rebuild
 
 The `args:` are positional in [deploy/webv/base/deployment.yaml](deploy/webv/base/deployment.yaml)
-(0=`--url`, 1=`--files`, 2=`--loop`, 3=`--threads=1`, 4=`--sleep=1`,
+(0=`--url`, 1=`--files`, 2=`--loop`, 3=`--threads=2`, 4=`--sleep=3ms`,
 5=`--verbose`). Patch a single arg in place to retune rate without
 editing the manifest or rebuilding the image — Kubernetes auto-rolls:
 
 ```bash
-# double the per-thread sleep -> ~half the RPS
+# double the per-thread sleep -> roughly half the RPS
 kubectl -n movies patch deploy webv --type=json \
-  -p='[{"op":"replace","path":"/spec/template/spec/containers/0/args/4","value":"--sleep=2"}]'
+  -p='[{"op":"replace","path":"/spec/template/spec/containers/0/args/4","value":"--sleep=6ms"}]'
 
-# bump worker threads to 2
+# drop back to a single worker thread
 kubectl -n movies patch deploy webv --type=json \
-  -p='[{"op":"replace","path":"/spec/template/spec/containers/0/args/3","value":"--threads=2"}]'
+  -p='[{"op":"replace","path":"/spec/template/spec/containers/0/args/3","value":"--threads=1"}]'
 ```
+
+Note: on this host the kernel timer slice quantizes `time.Sleep` to
+~1 ms, so `--sleep` values below 1 ms round down to 0. Use the
+`threads × sleep` combination to land non-coarse RPS targets.
 
 `make webv-deploy` re-syncs from the manifest if you want to drop the
 patch.

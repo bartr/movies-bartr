@@ -27,7 +27,7 @@ spec:
         - name: webv
           # Reuses the movies-api image — same Dockerfile bakes /webv
           # alongside /movies-api plus the suites at /webv-suites.
-          image: movies-api:0.9.0
+          image: movies-api:1.0.0
           imagePullPolicy: IfNotPresent
           command: ["/webv"]
           args:

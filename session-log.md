@@ -439,7 +439,7 @@ Session 9 closed the §14 acceptance loop with measured evidence and shipped the
 - Out of scope: New endpoints, TLS / authn / rate-limit hardening, OTel, k6, dashboard rework. (Hardening direction the AGENTS.md pointer mentioned is parking-lot for after 1.0.0.)
 - Failure condition: A §14 box that was green at 0.9.0 fails on the wiped-cluster rerun and we ship anyway, or RETRO.md is written from memory rather than from the actual evidence in this log.
 
-**Start time:** TBD
+**Start time:** 00:31 -0500 (frame commit) — the session 9 close commit had landed at 00:25 -0500 a few minutes earlier
 
 **RPI cycle**
 - Research: re-deploy order from `Makefile` targets + namespace ownership in [deploy/](deploy/) overlays
@@ -453,28 +453,28 @@ Session 9 closed the §14 acceptance loop with measured evidence and shipped the
 - Decision: proceed.
 
 **During**
-- Drift moments: TBD
-- Parking lot: TBD
+- Drift moments: none. The session-log timing reconciliation pass before the version bump was on-mission — you can't honestly tag 1.0.0 with a 4×-overstated duration sitting in session 9. The pass also surfaced the missing session 5 entry, which I added as a retroactive stub.
+- Parking lot: the inner-loop `make verify` rolling-update race deserves a built-in retry. Logged in RETRO.md but deferred to post-1.0.0 because it's a methodology-process improvement, not part of the §14 bar.
 
 **Close ritual**
-- [ ] Tests green
-- [ ] FF-merge
-- [ ] Tag (`git tag 1.0.0 && git push origin 1.0.0`)
-- [ ] Repo memory updated
-- [ ] Next session starter:
+- [x] Tests green (`go test -race ./...`)
+- [x] FF-merge (PR #10 rebase-merged into `main`)
+- [x] Tag (`git tag 1.0.0 && git push origin 1.0.0`)
+- [x] Repo memory updated (AGENTS.md next-session pointer + `/memories/repo/bartr-movies-notes.md` if anything new emerged)
+- [x] Next session starter: experiment is complete at 1.0.0. Any future session would be hardening (TLS / authn / rate limit) or a methodology-improvement follow-up (`make verify` retry; `make session-start` script that pre-fills the log frame). Not blocking on the experiment submission.
 
-**End time:**
-**Total focus minutes:**
+**End time:** 00:51 -0500 (tag commit)
+**Total focus minutes:** ~20 (Frame at 00:31 -0500 → tag at 00:51 -0500. Wall-clock evidence from git: see `git log --since='2026-05-07 00:27 -0500'` and `git for-each-ref refs/tags/1.0.0`.)
 **Tag shipped:** 1.0.0
 
 **One-paragraph summary**
-TBD
+Closed the experiment at 1.0.0. Validated every session-log timing claim against git tag + commit timestamps before bumping version (caught a 4×-overstated session 9 duration and a missing session 5 entry; both reconciled). Bumped 0.9.0 → 1.0.0 across `version.go`, `Makefile`, `Dockerfile`, both deployment manifests, and `openapi.json`. Wiped the local cluster (`kubectl delete ns movies monitoring`) and redeployed in dependency order (prom-operator → prom → grafana → movies-api → webv). Hit the documented `make verify` rolling-update race once and once more (metrics counter not yet seeded by traffic) — both cleared after seeding one `/api/genres` request and re-running. Verified all seven §14 boxes live: stack-up (`monitoring` + `movies` namespaces clean, all deployments Available), §6 endpoints (every route 200, validation negative `tt00000` rejects 400), `/metrics` (all three http_* vectors), JSON logs (one structured object per line), Grafana dashboard auto-provisioned with 7 panels and live Prometheus data, container security (uid 1000, RO root FS, ALL caps dropped, seccomp RuntimeDefault), inner loop end-to-end (`/version` returns `1.0.0`, webv heartbeat steady at 585 RPS / 0% errors). Wrote `RETRO.md` per [EXPERIMENT.md](docs/EXPERIMENT.md): the stack, the sessions, the headline measurements (50–500× under p95 spec; 17% over the RPS spec), where the methodology helped (frame, fit check, git-tag-per-session), where it got in the way (thread reuse on context-heavy late sessions, missing session 5 entry, post-hoc duration estimates), and surprises (Go is REALLY fast, default Prometheus buckets lie about sub-ms services, kernel timer quantizes `time.Sleep` to ~1 ms). PR #10 merged to `main`, tag `1.0.0` pushed.
 
 **Health signal**
-- Framing quality (1–5):
-- Drift (yes/no):
-- Fit check honest (yes/no):
-- Close complete (yes/no):
+- Framing quality (1–5): 5 — a small, well-defined frame for a release sweep; the time-reconciliation work was inside the frame, not adjacent to it.
+- Drift (yes/no): no.
+- Fit check honest (yes/no): yes — recorded "yes, fits in 90–120 min" and shipped in ~20.
+- Close complete (yes/no): yes.
 
 ---
 

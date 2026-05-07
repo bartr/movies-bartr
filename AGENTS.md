@@ -45,7 +45,7 @@
 
 ## Where the next session starts
 
-After tag `0.9.0`: every box in spec §14 acceptance is `[x]` with measured evidence — p95 list routes 0.10–0.23 ms · p95 detail routes ≈ 0.10 ms · 585 RPS sustained · 0% 5xx · 0% 4xx (single 500m pod). Bench instrumentation: `prometheus.DefBuckets` replaced with a sub-ms ladder (100 µs floor) in `src/internal/httpapi/metrics.go`; `apiRouteLabel` emits five route templates including `/api/movies/{id}` and `/api/actors/{id}`; webv `--sleep` takes Go durations and renders timing as `%.3fms`. In-cluster load gen pinned to `--threads=2 --sleep=3ms`. Grafana dashboard v3: 5-tile row 1 (Total · In-flight · 4xx/s · 5xx/s · Workers) + stacked req/s by route + sub-ms p95 timeseries. New `docs/PERFORMANCE.md` documents the 50–500× headroom against spec. **Session 10** is the 1.0.0 cut: pick the hardening direction (TLS / authn / rate limit / RETRO write-up), close any remaining experiment-evidence gaps, tag `1.0.0`.
+**Experiment is complete at tag `1.0.0`** (May 7 00:51 -0500). All seven §14 acceptance boxes verified live on a freshly-wiped local k3s cluster: p95 list routes 0.10–0.35 ms · p95 detail routes ≈ 0.10 ms · 585 RPS sustained · 0% 5xx · 0% 4xx (single 500m pod). [RETRO.md](RETRO.md) is the honest write-up per [docs/EXPERIMENT.md](docs/EXPERIMENT.md). Any next session is post-experiment: hardening direction (TLS / authn / rate limit), or a methodology-improvement follow-up (`make verify` retry for the rolling-update race; `make session-start` script that pre-fills the log frame). Not blocking the experiment submission.
 
 ## Inner loop quickref
 

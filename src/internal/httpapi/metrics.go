@@ -80,11 +80,11 @@ func (m *metrics) handler() http.Handler {
 // surfaces business traffic, and operational endpoints would dominate
 // the timeseries on an idle service.
 //
-// The route label is collapsed to the first two path segments — so
-// `/api/movies/{id}` and `/api/movies` both record as `/api/movies`,
-// and `/api/actors/{id}` collapses to `/api/actors`. That keeps label
-// cardinality bounded (one series per top-level resource) and matches
-// the granularity a business dashboard cares about.
+// The route label keeps cardinality bounded by emitting only known
+// templates: `/api/movies`, `/api/movies/{id}`, `/api/actors`,
+// `/api/actors/{id}`, `/api/genres`. Anything beyond a known third
+// segment collapses to its two-segment parent so a stray path can't
+// blow up label cardinality.
 func (m *metrics) middleware() func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -106,26 +106,47 @@ func (m *metrics) middleware() func(http.Handler) http.Handler {
 	}
 }
 
-// apiRouteLabel returns the two-level route label for a request path
+// apiRouteLabel returns the route-template label for a request path
 // and a bool indicating whether the request should be measured at all.
-// Only paths beginning with `/api/` are measured; the returned label is
-// the first two segments (`/api/movies`, `/api/actors`, `/api/genres`).
+// Only paths beginning with `/api/` are measured. List routes return
+// `/api/<resource>`; detail routes for movies and actors return
+// `/api/<resource>/{id}`. Unknown sub-paths collapse to their
+// two-segment parent to keep label cardinality bounded.
 func apiRouteLabel(path string) (string, bool) {
 	if len(path) < len("/api/") || path[:5] != "/api/" {
 		return "", false
 	}
-	// path[5:] is everything after "/api/". Split on the first '/'
-	// (or end-of-string) to get the resource segment.
+	// rest is everything after "/api/".
 	rest := path[5:]
-	for i := 0; i < len(rest); i++ {
-		if rest[i] == '/' {
-			rest = rest[:i]
-			break
-		}
+	resource := rest
+	tail := ""
+	if i := indexByte(rest, '/'); i >= 0 {
+		resource = rest[:i]
+		tail = rest[i+1:]
 	}
-	if rest == "" {
+	if resource == "" {
 		// "/api/" by itself — not a real resource. Skip.
 		return "", false
 	}
-	return "/api/" + rest, true
+	base := "/api/" + resource
+	// Detail routes only for resources that actually have one. A
+	// non-empty tail past the resource means a detail-style request.
+	if tail != "" {
+		switch resource {
+		case "movies", "actors":
+			return base + "/{id}", true
+		}
+	}
+	return base, true
+}
+
+// indexByte is a tiny strings.IndexByte to keep this file's imports
+// unchanged. It returns the index of the first c in s, or -1.
+func indexByte(s string, c byte) int {
+	for i := 0; i < len(s); i++ {
+		if s[i] == c {
+			return i
+		}
+	}
+	return -1
 }

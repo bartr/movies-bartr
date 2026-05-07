@@ -35,7 +35,7 @@ spec:
             - --files=/webv-suites/benchmark.yaml
             - --loop
             - --threads=1
-            - --sleep=2
+            - --sleep=1
             - --verbose
           resources:
             requests:

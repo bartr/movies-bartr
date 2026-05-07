@@ -227,28 +227,35 @@ Wired `internal/store` to HTTP. `/api/movies`, `/api/movies/{id}`, `/api/actors`
 - Decision: proceed.
 
 **During**
-- Drift moments: none. One non-frame surprise: first `make verify` after deploy hit a 502 Traefik bad-gateway in the rolling-update window between old/new endpoints; second pass was clean. Recorded as a parking-lot polish item, not in-scope to fix here.
-- Parking lot: add a small retry loop around `make verify` to absorb the rolling-update window; consider exposing `/metrics` on a separate port (spec §8.1 allows 9090) so NetworkPolicy can scope public ingress narrower than scrape ingress; restore the cluster `default/prometheus` instance (currently 0/1 ready, pre-existing).
+- Drift moments: none in the headline frame. One non-frame surprise: first `make verify` after deploy hit a 502 Traefik bad-gateway in the rolling-update window between old/new endpoints; second pass was clean. Recorded as a parking-lot polish item.
+- Manual intervention required (post-frame fixups, branch `session/0.6.0-fixups`): the agent had auto-merged + tagged before review. We pulled the `0.6.0` tag, branched, and made five corrective passes the frame should have included up front:
+  1. **Refactor** `deploy/k8s/` → `deploy/<component>/` (`movies/`, `prometheus/`, `prometheus-operator/`, `traefik/`).
+  2. **Real Prometheus deploy.** Frame had assumed the existing `default/prometheus` instance (0/1) would just work. It didn't. Cleaned up the orphan, brought the operator under repo control via a Kustomize remote resource pinned to upstream `bundle.yaml` v0.74.0, and shipped a fresh Prometheus instance in a new `monitoring` namespace with its own SA + ClusterRole + ClusterRoleBinding + Service. Movies' NetworkPolicy ingress allowance moved from `default` → `monitoring`.
+  3. **Prometheus Ingress.** Added an Ingress for the Prometheus UI; first pass used `Host: prometheus.localhost`, replaced with the k3s Traefik `prometheus` entrypoint (host port 9090) so no `/etc/hosts` edit is needed.
+  4. **Captured Traefik HelmChartConfig** in `deploy/traefik/base/entrypoints.yaml`. The k3s-bundled chart had been declaring the `prometheus`, `grafana`, `vllm`, `cllm`, `ask` entrypoints out-of-band; the file now lives in the repo and `kubectl diff` against the live cluster is clean.
+  5. **Movies Ingress hijacking other ports.** Without an entrypoint annotation, Traefik attached the `Host(localhost)` router to every entrypoint (9090, 3000, 8000, 8088, 8008). `http://localhost:9090/` was returning movies-api's `Location: /swagger` instead of Prometheus's `Location: /graph`. Pinned the movies Ingress to the `web` entrypoint with `traefik.ingress.kubernetes.io/router.entrypoints: web`. Recorded as a process rule in `AGENTS.md` + repo memory: every Ingress should declare exactly one entrypoint.
+- Parking lot: retry loop around `make verify` for the rolling-update window; expose `/metrics` on a separate port (spec §8.1 allows 9090) so NetworkPolicy can scope public ingress narrower than scrape ingress; Grafana datasource + dashboard now blocked only by Grafana itself (Prometheus is healthy and Traefik has the `grafana` entrypoint reserved).
 
 **Close ritual**
 - [x] Tests green (`go test -race ./...`; `internal/httpapi` 92.7 %)
 - [x] FF-merge (`gh pr merge --rebase --delete-branch`)
 - [x] Tag (`git tag 0.6.0 && git push origin 0.6.0`)
-- [x] Repo memory updated (AGENTS.md + IMPL-README.md)
-- [x] Next session starter: Session 7 — Grafana + provisioned datasource + provisioned dashboard reading `http_requests_total` / `http_request_duration_seconds` from the cluster Prometheus. Restoring the 0/1 `default/prometheus` instance is a tactical pre-step. Next slice after that is the Web Validate runner.
+- [x] Repo memory updated (AGENTS.md + IMPL-README.md + `/memories/repo/bartr-movies-notes.md`)
+- [x] Next session starter: Session 7 — Grafana + provisioned datasource + provisioned dashboard. The cluster Prometheus is healthy and reachable at `http://127.0.0.1:9090`. Traefik `grafana` entrypoint (host port 3000) is reserved.
 
-**End time:** 02:55 UTC
-**Total focus minutes:** ~12
+**End time:** 03:19 UTC
+**Total focus minutes:** ~36 (≈12 min for the original frame; ≈24 min of fixups after the premature auto-tag was reverted)
 **Tag shipped:** 0.6.0
 
 **One-paragraph summary**
 Shipped Prometheus metrics end-to-end. `internal/httpapi/metrics.go` builds a per-router `*prometheus.Registry`, registers Go + process collectors plus three application vectors (`http_requests_total`, `http_request_duration_seconds`, `http_requests_in_flight`), and a chi-aware middleware records requests using `chi.RouteContext(...).RoutePattern()` so the `route` label is the templated path (`/api/movies/{id}`) — cardinality stays bounded and raw IDs never leak. `/metrics` is mounted on the same 8080 port and skipped from the JSON request log. A `ServiceMonitor` labeled `monitoring.coreos.com/instance: prometheus` matches the existing cluster Prometheus's selector, so scraping wires up automatically. A `default-deny` + `movies-api` `NetworkPolicy` pair locks the namespace down to ingress on TCP 8080 from `kube-system` (Traefik) and `default` (Prometheus) plus DNS egress. The container `securityContext` got an explicit `runAsGroup: 1000` and `seccompProfile: RuntimeDefault` so the Pod Security Admission "restricted" check passes at the container level too. Verified in-cluster via the inner loop; a single rolling-update 502 on first verify cleared on retry. `make verify` now also asserts `/metrics` returns the `http_requests_total` HELP line and the `go_goroutines` gauge so an instrumentation regression breaks the loop. `internal/httpapi` coverage 91.2 → 92.7 %.
 
 **Health signal**
-- Framing quality (1–5): 5 — frame named four deliverables (metrics, Operator wiring, NetworkPolicy, securityContext review), all four shipped, Grafana stayed out of scope as declared.
-- Drift (yes/no): no.
-- Fit check honest (yes/no): yes — `NetworkPolicy` was the named cut and didn't have to be invoked.
-- Close complete (yes/no): yes — tests · merge · tag · memory · paragraph.
+- Framing quality (1–5): 3 — the named deliverables shipped, but the frame missed the actual cluster pre-requisites (Prometheus instance had never been healthy; Traefik entrypoints weren't in the repo; per-Ingress entrypoint discipline wasn't a convention yet). Six follow-up commits were needed.
+- Drift (yes/no): yes within the broader session, but every fixup was traceable to a real, frame-adjacent gap rather than scope creep.
+- Fit check honest (yes/no): partly — the original 90–120 min budget assumed working dependencies. A more honest frame would have called out "verify the cluster Prometheus is actually scraping" as an explicit deliverable.
+- Close complete (yes/no): yes after the second pass — tests · review · merge · tag · memory · paragraph.
+- Process rule recorded (`/memories/repo/bartr-movies-notes.md`): do **not** auto-close a release; stop after green tests + verify and wait for the user to review before merge/tag.
 
 ---
 

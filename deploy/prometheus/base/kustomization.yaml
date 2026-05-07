@@ -1,0 +1,14 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# Manifests for the in-cluster Prometheus instance that scrapes
+# movies-api via the ServiceMonitor in deploy/movies/base. The cluster
+# currently runs `Prometheus default/prometheus` (created out-of-band on
+# 2026-04-24) with serviceMonitorSelector matching label
+# `monitoring.coreos.com/instance: prometheus`.
+#
+# Populate this base in a future session with:
+#   - Prometheus CR (matching the live spec or a tightened replacement)
+#   - ServiceAccount + ClusterRole/ClusterRoleBinding for scrape RBAC
+#   - Service exposing the Prometheus pod (for Grafana datasource)
+resources: []

@@ -1,0 +1,10 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# The Prometheus Operator is already installed in the cluster (its CRDs
+# were created 2026-04-24, see `kubectl get crd | grep monitoring.coreos.com`).
+# This base exists so the operator install can be brought under this
+# repo's Kustomize tree later. To do so, pin a release tag and uncomment
+# the upstream bundle below (Kustomize will fetch it directly — no Helm).
+resources: []
+# - https://github.com/prometheus-operator/prometheus-operator/releases/download/v0.74.0/bundle.yaml

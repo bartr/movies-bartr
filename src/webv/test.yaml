@@ -19,7 +19,7 @@ requests:
 - path: /api/actors
 - path: /api/movies
 - path: /api/genres
-- path: /api/actors/nm0000031
+- path: /api/actors/nm0000002
 - path: /api/actors/nm0000173
 - path: /api/movies/tt0133093
 - path: /api/movies?genre=Action

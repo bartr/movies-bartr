@@ -369,4 +369,17 @@ Shipped `webv` — a 200-line Go CLI living at `src/cmd/webv/` that loads JSON s
 
 ---
 
+## Session 9 — 2026-05-07
+
+**Process note (recorded before frame):** Continuing session 9 in the same chat thread as session 8 instead of starting a fresh conversation. Methodology default ([METHODOLOGY.md](docs/METHODOLOGY.md)) is one-session-per-thread for clean signal, but session 9 (benchmarks / RPS gate) reuses session 8's context heavily — webv CLI internals, the in-cluster Deployment + NetworkPolicy shape, the `--sleep` rate cap that just landed at 544 RPS, and the live cluster state. Spinning up a fresh thread would force the agent to re-derive all of that. Deviation accepted by the user; logging it here so the experiment evidence is honest about the deviation rather than pretending it didn't happen.
+
+**Frame** (to be filled in)
+- Goal:
+- Out of scope:
+- Failure condition:
+
+**Start time:**
+
+---
+
 <!-- Copy the Session Template block above for each new session. -->

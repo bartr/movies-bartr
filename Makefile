@@ -1,7 +1,7 @@
 # movies-api Makefile — minimal wrapper around the inner-loop steps
 # documented in IMPL-README.md. Each target is independently runnable.
 
-VERSION     ?= 0.9.0
+VERSION     ?= 1.0.0
 IMAGE       ?= movies-api:$(VERSION)
 TARBALL     ?= /tmp/movies-api-$(VERSION).tar
 KCTL        ?= sudo k3s kubectl

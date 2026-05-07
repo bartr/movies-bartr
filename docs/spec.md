@@ -259,10 +259,15 @@ Requirements:
 
 ## 14. Acceptance Criteria
 
-- [ ] Following the documented dev-loop steps in §9.1 brings up movies-api + Prometheus + Grafana on a fresh local k3s cluster.
-- [ ] All endpoints in §6 respond per the contract; baseline + benchmark Web Validate suites pass.
-- [ ] `/metrics` exposes all metrics in §7.1 with the specified names and labels.
-- [ ] Logs are valid JSON (one object per line) with all required fields in §7.2.
-- [ ] Grafana dashboard auto-provisions and shows live data from Prometheus.
-- [ ] Container image runs as non-root with a read-only root FS.
-- [ ] The inner-loop dev process in §12 runs end-to-end on a clean machine: build new version → deploy to local k3s → `/version` returns the new semver → validation tests pass → the test run is visible on the Grafana dashboard.
+- [x] Following the documented dev-loop steps in §9.1 brings up movies-api + Prometheus + Grafana on a fresh local k3s cluster.
+- [x] All endpoints in §6 respond per the contract; baseline + benchmark Web Validate suites pass.
+- [x] `/metrics` exposes all metrics in §7.1 with the specified names and labels.
+- [x] Logs are valid JSON (one object per line) with all required fields in §7.2.
+- [x] Grafana dashboard auto-provisions and shows live data from Prometheus.
+- [x] Container image runs as non-root with a read-only root FS.
+- [x] The inner-loop dev process in §12 runs end-to-end on a clean machine: build new version → deploy to local k3s → `/version` returns the new semver → validation tests pass → the test run is visible on the Grafana dashboard.
+
+> Evidence (tag 0.9.0, in-cluster, single 500m pod):
+> p95 list routes 0.10–0.23 ms · p95 detail routes ≈ 0.10 ms ·
+> 585 RPS sustained · 0% 5xx · 0% 4xx on the benchmark suite.
+> See [PERFORMANCE.md](PERFORMANCE.md) for the run details.

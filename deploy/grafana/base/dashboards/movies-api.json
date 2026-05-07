@@ -4,7 +4,7 @@
   "tags": ["movies", "bartr"],
   "timezone": "browser",
   "schemaVersion": 39,
-  "version": 2,
+  "version": 3,
   "refresh": "10s",
   "time": { "from": "now-15m", "to": "now" },
   "templating": { "list": [] },
@@ -145,11 +145,20 @@
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "gridPos": { "x": 0, "y": 4, "w": 12, "h": 8 },
       "fieldConfig": {
-        "defaults": { "unit": "reqps", "decimals": 0, "custom": { "drawStyle": "line", "lineWidth": 1, "fillOpacity": 10 } },
+        "defaults": {
+          "unit": "reqps",
+          "decimals": 0,
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 30,
+            "stacking": { "mode": "normal", "group": "A" }
+          }
+        },
         "overrides": []
       },
       "options": {
-        "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["mean", "lastNotNull"] },
+        "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["mean", "lastNotNull", "max"] },
         "tooltip": { "mode": "multi", "sort": "desc" }
       },
       "targets": [

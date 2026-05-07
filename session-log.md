@@ -378,7 +378,7 @@ Shipped `webv` — a 200-line Go CLI living at `src/cmd/webv/` that loads JSON s
 - Out of scope: New endpoints, new auth, k6/locust replacing webv, OTel traces, custom metrics beyond the existing three vectors.
 - Failure condition: A spec target is missed and we ship anyway, or we ship "p95 = 5 ms uniformly" without explaining why.
 
-**Start time:** ~02:30 UTC
+**Start time:** 23:43 -0500 (first commit after 0.8.0 tag)
 
 **RPI cycle**
 - Research: live-cluster Prometheus introspection (no separate research doc — the data was the research)
@@ -402,8 +402,8 @@ Shipped `webv` — a 200-line Go CLI living at `src/cmd/webv/` that loads JSON s
 - [x] Repo memory updated (`AGENTS.md` next-session pointer + `/memories/repo/bartr-movies-notes.md`)
 - [x] Next session starter: 1.0.0 sweep — every §14 box already green; the 1.0.0 cut is hardening (TLS / auth / rate limits or whichever direction the user picks), retro write-up, and tag.
 
-**End time:** ~05:25 UTC
-**Total focus minutes:** ~175 (single long block)
+**End time:** 00:25 -0500 (00:25 May 7 local; ~05:25 UTC)
+**Total focus minutes:** ~42 (git timestamps: first commit 23:43 → close commit 00:25; ± a few minutes of pre-commit reading)
 **Tag shipped:** 0.9.0
 
 **One-paragraph summary**
@@ -414,6 +414,54 @@ Session 9 closed the §14 acceptance loop with measured evidence and shipped the
 - Drift (yes/no): no — the detour was directly required by the success criterion.
 - Fit check honest (yes/no): yes — recorded "did not fit in 120 min, proceeded anyway" rather than rewriting the frame.
 - Close complete (yes/no): yes.
+
+---
+
+## Session 10 — 2026-05-07
+
+**Process note (recorded before frame):** Continuing in the same chat thread as sessions 8 and 9. Methodology default ([METHODOLOGY.md](docs/METHODOLOGY.md)) is one session per thread; reusing the thread again because session 10 is the 1.0.0 release sweep and leans directly on session 9's benchmarking context — the live-cluster Prometheus knowledge, the histogram bucket / route-label decisions, the webv `--threads=2 --sleep=3ms` tuning math. A fresh thread would re-derive all of that. Deviation accepted by the user; logging it here so the experiment evidence remains honest about thread reuse.
+
+**Frame**
+- Goal: Acceptance run on a freshly-wiped local cluster against spec §14 — `movies` and `monitoring` namespaces deleted, then redeploy everything in order, run the webv benchmark suite, confirm every §14 box still holds. Write `RETRO.md`. Tag `1.0.0`.
+- Out of scope: New endpoints, TLS / authn / rate-limit hardening, OTel, k6, dashboard rework. (Hardening direction the AGENTS.md pointer mentioned is parking-lot for after 1.0.0.)
+- Failure condition: A §14 box that was green at 0.9.0 fails on the wiped-cluster rerun and we ship anyway, or RETRO.md is written from memory rather than from the actual evidence in this log.
+
+**Start time:** TBD
+
+**RPI cycle**
+- Research: re-deploy order from `Makefile` targets + namespace ownership in [deploy/](deploy/) overlays
+- Plan: in-thread (deviation: continued from session 9)
+- Changes: this branch, `session/1.0.0-release`
+- Review: PR description + this entry
+
+**Fit check** (after Plan, before Implement)
+- Will this plan fit in 90–120 min? Yes — redeploy + verify is the inner loop we already exercise; RETRO.md is a write-up against existing evidence.
+- Smallest cut if no: ship 1.0.0 with §14 evidence and a stub RETRO.md; expand the retro in a follow-up.
+- Decision: proceed.
+
+**During**
+- Drift moments: TBD
+- Parking lot: TBD
+
+**Close ritual**
+- [ ] Tests green
+- [ ] FF-merge
+- [ ] Tag (`git tag 1.0.0 && git push origin 1.0.0`)
+- [ ] Repo memory updated
+- [ ] Next session starter:
+
+**End time:**
+**Total focus minutes:**
+**Tag shipped:** 1.0.0
+
+**One-paragraph summary**
+TBD
+
+**Health signal**
+- Framing quality (1–5):
+- Drift (yes/no):
+- Fit check honest (yes/no):
+- Close complete (yes/no):
 
 ---
 

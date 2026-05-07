@@ -13,3 +13,4 @@ resources:
   - rbac.yaml
   - prometheus.yaml
   - service.yaml
+  - ingress.yaml

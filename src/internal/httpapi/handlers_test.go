@@ -25,7 +25,7 @@ func body(t *testing.T, rr *httptest.ResponseRecorder) string {
 }
 
 func TestVersionHandler(t *testing.T) {
-	r := NewRouter("9.9.9", func() bool { return true })
+	r := NewRouter("9.9.9", func() bool { return true }, nil)
 	rr := do(t, r, "/version")
 	if got, want := rr.Code, http.StatusOK; got != want {
 		t.Fatalf("status: got %d want %d", got, want)
@@ -40,7 +40,7 @@ func TestVersionHandler(t *testing.T) {
 
 func TestVersionIndependentOfReady(t *testing.T) {
 	// /version must respond 200 even before /readyz is true (spec §6.1).
-	r := NewRouter("0.1.0", func() bool { return false })
+	r := NewRouter("0.1.0", func() bool { return false }, nil)
 	rr := do(t, r, "/version")
 	if rr.Code != http.StatusOK {
 		t.Fatalf("status: got %d want 200", rr.Code)
@@ -51,7 +51,7 @@ func TestVersionIndependentOfReady(t *testing.T) {
 }
 
 func TestHealthz(t *testing.T) {
-	r := NewRouter("0.1.0", func() bool { return false })
+	r := NewRouter("0.1.0", func() bool { return false }, nil)
 	rr := do(t, r, "/healthz")
 	if rr.Code != http.StatusOK {
 		t.Fatalf("status: got %d want 200", rr.Code)
@@ -77,7 +77,7 @@ func TestReadyz(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			ready := tc.ready
-			r := NewRouter("0.1.0", func() bool { return ready })
+			r := NewRouter("0.1.0", func() bool { return ready }, nil)
 			rr := do(t, r, "/readyz")
 			if rr.Code != tc.wantCode {
 				t.Fatalf("status: got %d want %d", rr.Code, tc.wantCode)

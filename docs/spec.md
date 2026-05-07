@@ -106,14 +106,16 @@ All endpoints are read-only `GET`. JSON responses use `application/json; charset
 | GET    | `/swagger`                    | Swagger UI for the OpenAPI spec                                       |
 | GET    | `/swagger/v1/swagger.json`    | OpenAPI 3 document                                                    |
 
-Validation rules (must return HTTP 400 on violation):
+Validation rules (must return HTTP 400 on violation, with body
+`application/problem+json` per RFC 7807):
 
-- `pageNumber` ∈ [1, 10000] (default: `1` when omitted)
-- `pageSize` ∈ [1, 1000] (default: `25` when omitted)
-- `year` - examine data
-- `rating` - examine data
-- `q` length ∈ [2, 20] when present
-- `actorId` matches `^nm\d{5,9}$`; `movieId` matches `^tt\d{5,9}$`
+- `pageNumber` ∈ [1, 10000] (default: `1` when omitted; integer-only — `10.1` and `foo` are 400).
+- `pageSize` ∈ [1, 1000] (default: `25` when omitted; integer-only).
+- `q` length ∈ [2, 20] when present.
+- `genre` length ∈ [3, 20] when present.
+- `year` ∈ [1874, 2025] (integer-only). Bounds are frozen constants — the upper bound advances as part of an annual housekeeping change, not at build time.
+- `rating` ∈ [0.0, 10.0].
+- `actorId` matches `^nm\d{5,9}$`; `movieId` matches `^tt\d{5,9}$`. In addition, the digit portion must not be all zeros (so `tt00000` and `nm00000` are 400, but `tt12345` is well-formed and 404s on miss).
 
 ### 6.1 `/version` response
 

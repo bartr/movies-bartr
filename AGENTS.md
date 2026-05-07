@@ -28,7 +28,7 @@
 
 ## Where the next session starts
 
-After tag `0.2.0`: `internal/store` is live with all required indexes + `q=` substring search; loader gates `/readyz`. **Session 3** wires the store to HTTP — implement `/api/movies`, `/api/movies/{id}`, `/api/actors`, `/api/actors/{id}`, `/api/genres` per spec §6 with full query-param validation (`q` length 2–20, page bounds, id regex, year/rating ranges) and RFC 7807 error bodies. Frame should be sized to fill 90–120 min — last two sessions both finished in under 15 min, so bundle the next adjacent slice (e.g. Prometheus metrics + ServiceMonitor) into the frame and use the cut list, not a conservative frame, to guard the budget.
+After tag `0.3.0`: `/api/movies`, `/api/movies/{id}`, `/api/actors`, `/api/actors/{id}`, `/api/genres` are live with full query/path validation and RFC 7807 error bodies; `internal/httpapi` coverage is 91.2 %. **Session 4** picks up the next slice — top candidates are OpenAPI + Swagger UI (spec §6 routes `/`, `/swagger`, `/swagger/v1/swagger.json`) **or** Prometheus metrics + `ServiceMonitor` + NetworkPolicy. Frame should fill 90–120 min — last session over-shot the "fits" claim again, so default to bundling adjacent slices and only cut at the fit check.
 
 ## Inner loop quickref
 

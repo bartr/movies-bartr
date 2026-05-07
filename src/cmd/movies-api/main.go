@@ -50,8 +50,10 @@ func run(args []string) error {
 		slog.String("config", cfg.Redacted()),
 	)
 
-	// Load the in-memory catalog. /readyz stays 503 until this completes.
+	// Load the in-memory catalog. /readyz stays 503 until this completes,
+	// and /api/* responds 503 problem+json until storeRef is non-nil.
 	var ready atomic.Bool
+	var storeRef atomic.Pointer[store.Store]
 	go func() {
 		s, err := store.Load(cfg.DataDir)
 		if err != nil {
@@ -64,10 +66,15 @@ func run(args []string) error {
 			slog.Int("actors", c.Actors),
 			slog.Int("genres", c.Genres),
 		)
+		storeRef.Store(s)
 		ready.Store(true)
 	}()
 
-	router := httpapi.NewRouter(version.Version, func() bool { return ready.Load() })
+	router := httpapi.NewRouter(
+		version.Version,
+		func() bool { return ready.Load() },
+		func() *store.Store { return storeRef.Load() },
+	)
 
 	addr := net.JoinHostPort("0.0.0.0", strconv.Itoa(cfg.Port))
 	srv := &http.Server{

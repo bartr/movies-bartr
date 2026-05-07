@@ -56,12 +56,11 @@ To bump the version, override `VERSION`:
 make image import deploy verify VERSION=0.1.1
 ```
 
-## What's done (tag 0.1.0)
+## What's done (tag 0.3.0)
 
-- `/version` (plaintext semver), `/healthz` (plaintext `pass`), `/readyz` (gates on synthetic ready flag).
-- Distroless image, runs as uid 1000, read-only root FS, all caps dropped, no privilege escalation, `automountServiceAccountToken: false`.
-- Liveness + readiness probes wired to the right endpoints.
-- Resource requests/limits per spec §8.1.
+- **Session 1 (0.1.0):** `/version`, `/healthz`, `/readyz` walking skeleton on distroless; non-root, RO root FS, all caps dropped; Kustomize-only manifests; Traefik Ingress on `localhost`.
+- **Session 2 (0.2.0):** `internal/store` with id/genre/year/rating-bucket/actor indexes + `q=` substring search; loader cross-references all four duplicate id fields and gates `/readyz` until the dataset is in memory.
+- **Session 3 (0.3.0):** `/api/movies`, `/api/movies/{id}`, `/api/actors`, `/api/actors/{id}`, `/api/genres` with full validation (`pageNumber`, `pageSize`, `q`, `genre`, `year`, `rating`, `actorId`, path ids — see spec §6). Errors are RFC 7807 `application/problem+json`. `internal/httpapi` coverage 91.2 % with one negative test per rule mirroring `test.json`.
 
 ## What's deferred
 
@@ -69,12 +68,9 @@ See [session-log.md](session-log.md) for the per-session frame. Headline:
 
 | Tag    | Adds                                                       |
 |--------|------------------------------------------------------------|
-| 0.2.0  | Data layer (JSON loader, in-memory store + indexes)        |
-| 0.3.0  | Read API happy paths                                       |
-| 0.4.0  | Validation (`application/problem+json`)                    |
-| 0.5.0  | OpenAPI + Swagger UI + JSON logs review                    |
-| 0.6.0  | Prometheus metrics + Operator + ServiceMonitor + NetPol    |
-| 0.7.0  | Grafana + provisioned dashboard                            |
-| 0.8.0  | Web Validate suite + documented inner loop                 |
-| 0.9.0  | Benchmarks (p95 + 500 RPS)                                 |
+| 0.4.0  | OpenAPI + Swagger UI                                       |
+| 0.5.0  | Prometheus metrics + ServiceMonitor + NetworkPolicy        |
+| 0.6.0  | Grafana + provisioned dashboard                            |
+| 0.7.0  | Web Validate runner + documented inner loop                |
+| 0.8.0  | Benchmarks (p95 + 500 RPS)                                 |
 | 1.0.0  | §14 acceptance run + RETRO.md                              |

@@ -28,7 +28,7 @@
 
 ## Where the next session starts
 
-After tag `0.3.0`: `/api/movies`, `/api/movies/{id}`, `/api/actors`, `/api/actors/{id}`, `/api/genres` are live with full query/path validation and RFC 7807 error bodies; `internal/httpapi` coverage is 91.2 %. **Session 4** picks up the next slice — top candidates are OpenAPI + Swagger UI (spec §6 routes `/`, `/swagger`, `/swagger/v1/swagger.json`) **or** Prometheus metrics + `ServiceMonitor` + NetworkPolicy. Frame should fill 90–120 min — last session over-shot the "fits" claim again, so default to bundling adjacent slices and only cut at the fit check.
+After tag `0.6.0`: `/metrics` on the same 8080 port, `prometheus/client_golang` v1.23 with a per-router registry; Go + process collectors plus `http_requests_total`, `http_request_duration_seconds`, `http_requests_in_flight` keyed by templated chi route. `ServiceMonitor` labeled `monitoring.coreos.com/instance: prometheus` for the cluster Prometheus operator. `default-deny` + `movies-api` `NetworkPolicy` pair locks the namespace down to Traefik + scrape ingress + DNS egress. Container `securityContext` now sets `runAsGroup` and `seccompProfile: RuntimeDefault` explicitly. `internal/httpapi` coverage 92.7 %. **Session 7** picks Grafana + provisioned dashboard (the cluster `default/prometheus` instance has been 0/1 for a while — restoring it is a tactical pre-step, not a frame-buster).
 
 ## Inner loop quickref
 

@@ -19,6 +19,12 @@ func requestLogger() func(http.Handler) http.Handler {
 			rec := &statusRecorder{ResponseWriter: w, status: http.StatusOK}
 			next.ServeHTTP(rec, r)
 
+			// Don't log Prometheus scrapes — they hit /metrics every 30s and
+			// would drown out the signal in the request log.
+			if r.URL.Path == "/metrics" {
+				return
+			}
+
 			lvl := slog.LevelInfo
 			switch {
 			case rec.status >= 500:

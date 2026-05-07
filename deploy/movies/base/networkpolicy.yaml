@@ -3,8 +3,8 @@
 #   1. default-deny  — selects every pod in the namespace and drops all
 #      ingress + egress traffic.
 #   2. movies-api    — narrowly re-allows only what the workload needs:
-#        ingress  : TCP 8080 from kube-system (Traefik) and default
-#                   (Prometheus operator scrape).
+#        ingress  : TCP 8080 from kube-system (Traefik) and monitoring
+#                   (Prometheus scrape).
 #        egress   : DNS (UDP+TCP 53) to kube-system.
 #
 # The `kubernetes.io/metadata.name` label is set automatically by the
@@ -46,11 +46,11 @@ spec:
       ports:
         - protocol: TCP
           port: 8080
-    # Prometheus operator scrape (the cluster Prometheus runs in default).
+    # Prometheus operator scrape (the Prometheus instance runs in monitoring).
     - from:
         - namespaceSelector:
             matchLabels:
-              kubernetes.io/metadata.name: default
+              kubernetes.io/metadata.name: monitoring
       ports:
         - protocol: TCP
           port: 8080

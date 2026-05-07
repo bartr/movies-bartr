@@ -13,23 +13,33 @@ RUN go mod download
 COPY cmd ./cmd
 COPY internal ./internal
 
-ARG VERSION=0.7.0
+ARG VERSION=0.8.0
 ENV CGO_ENABLED=0 GOOS=linux GOARCH=amd64
 
 RUN go build \
       -trimpath \
       -ldflags "-s -w -X github.com/bartr/bartr-movies/internal/version.Version=${VERSION}" \
       -o /out/movies-api \
-      ./cmd/movies-api
+      ./cmd/movies-api \
+ && go build \
+      -trimpath \
+      -ldflags "-s -w -X github.com/bartr/bartr-movies/internal/version.Version=${VERSION}" \
+      -o /out/webv \
+      ./cmd/webv
 
 # Runtime stage ------------------------------------------------------------
 FROM gcr.io/distroless/static-debian12:nonroot
 
 COPY --from=build /out/movies-api /movies-api
+COPY --from=build /out/webv /webv
 
 # Bake the JSON catalog into the image at /data per spec §5.2. Loader
 # runs in main.go after startup; /readyz gates on it.
 COPY data /data
+
+# Bundle the webv test suites so the same image can run as either the
+# API server or the load generator (Job in deploy/webv).
+COPY webv /webv-suites
 
 # Spec §8.1 wants uid 1000; the Pod sets runAsUser explicitly, but we also
 # default to a non-root uid here so `docker run` is non-root by default.

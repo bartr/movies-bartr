@@ -13,9 +13,9 @@
 
 - Go 1.26 · chi v5 · `log/slog` (JSON) · `flag`+env (`MOVIES_*`) for config.
 - Module: `github.com/bartr/bartr-movies`.
-- Layout: Go module + Dockerfile + `data/` live under `src/`. Manifests under `deploy/<component>/{base,overlays/dev}` — `deploy/movies/` for the API, with sibling skeletons `deploy/prometheus/` and `deploy/prometheus-operator/` ready for future sessions. Makefile at repo root drives both.
+- Layout: Go module + Dockerfile + `data/` live under `src/`. Manifests under `deploy/<component>/{base,overlays/dev}` — `deploy/movies/` for the API, `deploy/prometheus/` and `deploy/prometheus-operator/` for monitoring, and `deploy/traefik/` for the k3s Traefik HelmChartConfig (entrypoints). Makefile at repo root drives both.
 - Image base: `gcr.io/distroless/static-debian12:nonroot`. Pod runs uid 1000, RO root FS, drop ALL caps.
-- Manifests: Kustomize only (`deploy/<component>/base` + `deploy/<component>/overlays/dev`; `<component>` is `movies` today, `prometheus` / `prometheus-operator` are skeleton siblings). **No Helm.**
+- Manifests: Kustomize only (`deploy/<component>/base` + `deploy/<component>/overlays/dev`; components are `movies`, `prometheus`, `prometheus-operator`, `traefik`). **No Helm charts authored here**; the `traefik` component only patches the k3s-bundled chart via a `HelmChartConfig`.
 - Local cluster: native `k3s` on the host (no k3d/kind).
 - Image distribution: `docker save` → `sudo k3s ctr images import`. **No local registry.**
 

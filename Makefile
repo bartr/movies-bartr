@@ -9,9 +9,11 @@ SRC        ?= src
 MOVIES_DIR ?= deploy/movies/overlays/dev
 PROM_OP_DIR ?= deploy/prometheus-operator/overlays/dev
 PROM_DIR    ?= deploy/prometheus/overlays/dev
+TRAEFIK_DIR ?= deploy/traefik/overlays/dev
 
 .PHONY: help build test image import deploy verify verify-ingress undeploy clean \
-	prom-operator-deploy prom-deploy prom-verify prom-undeploy prom-operator-undeploy
+	prom-operator-deploy prom-deploy prom-verify prom-undeploy prom-operator-undeploy \
+	traefik-apply
 
 help:
 	@echo "Targets:"
@@ -28,6 +30,7 @@ help:
 	@echo "  prom-verify           - confirm Prometheus is scraping movies-api"
 	@echo "  prom-undeploy         - delete Prometheus instance"
 	@echo "  prom-operator-undeploy- delete prometheus-operator"
+	@echo "  traefik-apply         - apply Traefik HelmChartConfig (entrypoints)"
 	@echo "  clean                 - go clean + rm tarball"
 
 build:
@@ -107,3 +110,9 @@ prom-undeploy:
 
 prom-operator-undeploy:
 	kustomize build $(PROM_OP_DIR) | $(KCTL) delete --ignore-not-found -f -
+
+# k3s reconciles the bundled Traefik chart from this HelmChartConfig.
+# Apply re-runs the chart with the entrypoint values, recreating the
+# `prometheus`, `grafana`, etc. host ports.
+traefik-apply:
+	kustomize build $(TRAEFIK_DIR) | $(KCTL) apply -f -

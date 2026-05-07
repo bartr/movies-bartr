@@ -1,0 +1,60 @@
+# k3s ships Traefik via a HelmChart; this HelmChartConfig in kube-system
+# patches the chart's values to declare extra entrypoints. Each entry
+# below is published on the listed host port; an Ingress can target one
+# with the annotation:
+#
+#   traefik.ingress.kubernetes.io/router.entrypoints: <name>
+#
+# (no `host:` rule needed in that case).
+#
+# Entrypoints in this file:
+#
+#   | Entrypoint  | Service port | Host port | Used by                |
+#   |-------------|--------------|-----------|------------------------|
+#   | vllm        | 8001         | 8000      | other workload         |
+#   | cllm        | 8089         | 8088      | other workload         |
+#   | ask         | 8009         | 8008      | other workload         |
+#   | prometheus  | 9091         | 9090      | deploy/prometheus      |
+#   | grafana     | 3001         | 3000      | future Grafana session |
+#
+# The default `web` (80) and `websecure` (443) entrypoints are inherited
+# from the chart and are not overridden here.
+apiVersion: helm.cattle.io/v1
+kind: HelmChartConfig
+metadata:
+  name: traefik
+  namespace: kube-system
+spec:
+  failurePolicy: reinstall
+  valuesContent: |-
+    ports:
+      vllm:
+        port: 8001
+        expose:
+          default: true
+        exposedPort: 8000
+        protocol: TCP
+      cllm:
+        port: 8089
+        expose:
+          default: true
+        exposedPort: 8088
+        protocol: TCP
+      ask:
+        port: 8009
+        expose:
+          default: true
+        exposedPort: 8008
+        protocol: TCP
+      prometheus:
+        port: 9091
+        expose:
+          default: true
+        exposedPort: 9090
+        protocol: TCP
+      grafana:
+        port: 3001
+        expose:
+          default: true
+        exposedPort: 3000
+        protocol: TCP

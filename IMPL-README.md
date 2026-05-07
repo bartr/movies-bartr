@@ -11,7 +11,7 @@
 - **Logging:** `log/slog` (JSON handler, stdout, level via `MOVIES_LOG_LEVEL`)
 - **Config:** `flag` + env (`MOVIES_*`); precedence defaults < env < flags (spec §11)
 - **Container:** distroless `gcr.io/distroless/static-debian12:nonroot`
-- **Manifests:** Kustomize `deploy/k8s/{base,overlays/dev}` (no Helm, per spec §8)
+- **Manifests:** Kustomize `deploy/<component>/{base,overlays/dev}` — `movies/` today, `prometheus/` and `prometheus-operator/` are skeleton siblings (no Helm, per spec §8)
 - **Local k8s:** native `k3s` on the host
 
 ## Layout
@@ -25,8 +25,10 @@ src/                       Go module + Dockerfile + data
   data/                    source-of-truth JSON (baked into image, spec §5.2)
   Dockerfile               multi-stage; build context is ./src
   go.mod, go.sum
-deploy/k8s/base/           ns + deployment + service + kustomization
-deploy/k8s/overlays/dev    seam for dev-only resources (Prometheus etc.)
+deploy/movies/base/        ns + deployment + service + ingress + servicemonitor + networkpolicy
+deploy/movies/overlays/dev seam for dev-only resources
+deploy/prometheus/         skeleton — populate when bringing the cluster Prometheus instance under repo control
+deploy/prometheus-operator skeleton — pin upstream bundle when bringing the operator under repo control
 .copilot-tracking/         RPI artifacts (research/plan/changes/review)
 Makefile                   inner-loop wrapper (run from repo root)
 ```

@@ -1,11 +1,12 @@
 # movies-api Makefile — minimal wrapper around the inner-loop steps
 # documented in IMPL-README.md. Each target is independently runnable.
 
-VERSION ?= 0.6.0
-IMAGE   ?= movies-api:$(VERSION)
-TARBALL ?= /tmp/movies-api-$(VERSION).tar
-KCTL    ?= sudo k3s kubectl
-SRC     ?= src
+VERSION    ?= 0.6.0
+IMAGE      ?= movies-api:$(VERSION)
+TARBALL    ?= /tmp/movies-api-$(VERSION).tar
+KCTL       ?= sudo k3s kubectl
+SRC        ?= src
+MOVIES_DIR ?= deploy/movies/overlays/dev
 
 .PHONY: help build test image import deploy verify verify-ingress undeploy clean
 
@@ -36,11 +37,11 @@ import: image
 	@echo "Imported $(IMAGE) into k3s containerd"
 
 deploy:
-	kustomize build deploy/k8s/overlays/dev | $(KCTL) apply -f -
+	kustomize build $(MOVIES_DIR) | $(KCTL) apply -f -
 	$(KCTL) -n movies rollout status deploy/movies-api --timeout=60s
 
 undeploy:
-	kustomize build deploy/k8s/overlays/dev | $(KCTL) delete -f - --ignore-not-found
+	kustomize build $(MOVIES_DIR) | $(KCTL) delete -f - --ignore-not-found
 
 # verify hits Traefik on host port 80 (k3s default) using the Ingress host
 # `localhost`. No port-forward needed.

@@ -28,7 +28,7 @@
 
 ## Where the next session starts
 
-After tag `0.1.0`: skeleton is live in cluster, `/version /healthz /readyz` verified. **Session 2** infers schemas from `data/*.json` and builds the in-memory store + indexes with ≥80% coverage. Do not start the HTTP `/api/*` work until the store + tests are green.
+After tag `0.2.0`: `internal/store` is live with all required indexes + `q=` substring search; loader gates `/readyz`. **Session 3** wires the store to HTTP — implement `/api/movies`, `/api/movies/{id}`, `/api/actors`, `/api/actors/{id}`, `/api/genres` per spec §6 with full query-param validation (`q` length 2–20, page bounds, id regex, year/rating ranges) and RFC 7807 error bodies. Frame should be sized to fill 90–120 min — last two sessions both finished in under 15 min, so bundle the next adjacent slice (e.g. Prometheus metrics + ServiceMonitor) into the frame and use the cut list, not a conservative frame, to guard the budget.
 
 ## Inner loop quickref
 

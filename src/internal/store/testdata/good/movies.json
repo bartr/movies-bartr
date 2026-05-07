@@ -1,0 +1,38 @@
+[
+  {
+    "id": "tt0000001", "key": "tt0000001", "_id": "tt0000001", "movieId": "tt0000001",
+    "type": "movie",
+    "title": "The Alpha File",
+    "year": 1999,
+    "runtime": 100,
+    "genres": ["Drama", "Mystery"],
+    "roles": [
+      {"order": 1, "actorId": "nm0000001", "name": "Alice Anderson", "category": "actress", "characters": ["Detective Pine"]},
+      {"order": 2, "actorId": "nm0000002", "name": "Bob Brown", "category": "actor", "characters": ["The Suspect"]},
+      {"order": 3, "actorId": "nm0000003", "name": "Carol Coen", "category": "director"}
+    ]
+  },
+  {
+    "id": "tt0000002", "key": "tt0000002", "_id": "tt0000002", "movieId": "tt0000002",
+    "type": "movie",
+    "title": "Beta Quest",
+    "year": 2005,
+    "runtime": 120,
+    "genres": ["Adventure", "Fantasy"],
+    "roles": [
+      {"order": 1, "actorId": "nm0000001", "name": "Alice Anderson", "category": "actress", "characters": ["Captain Vega"]},
+      {"order": 2, "actorId": "nm0000003", "name": "Carol Coen", "category": "producer", "job": "producer"}
+    ]
+  },
+  {
+    "id": "tt0000003", "key": "tt0000003", "_id": "tt0000003", "movieId": "tt0000003",
+    "type": "movie",
+    "title": "Gamma Rays",
+    "year": 2009,
+    "runtime": 95,
+    "genres": ["Drama", "Sci-Fi"],
+    "roles": [
+      {"order": 1, "actorId": "nm0000002", "name": "Bob Brown", "category": "actor", "characters": ["Doctor Quark"]}
+    ]
+  }
+]

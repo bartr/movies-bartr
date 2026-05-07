@@ -1,0 +1,19 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: monitoring
+
+resources:
+  - ../../base
+
+# Dev-only Secret holding the Grafana admin password. Spec §7.3 says the
+# admin password is set via env in the dev overlay only — non-dev
+# overlays must provide their own Secret with the same key. Ship in a
+# Secret (never in a ConfigMap or repo plaintext outside this overlay)
+# and let kustomize hash + reference it through the Deployment's
+# envFrom: secretRef: grafana-admin.
+secretGenerator:
+  - name: grafana-admin
+    type: Opaque
+    literals:
+      - GF_SECURITY_ADMIN_PASSWORD=Passw0rd

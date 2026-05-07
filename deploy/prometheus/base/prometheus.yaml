@@ -13,6 +13,10 @@ spec:
   retention: 7d
   externalLabels:
     cluster: z01
+  # Enable the admin TSDB API so we can tombstone stale series with
+  # /api/v1/admin/tsdb/delete_series + clean_tombstones. Required on
+  # the local dev cluster only — see repo memory.
+  enableAdminAPI: true
   # Discover any ServiceMonitor in any namespace whose labels include
   # `monitoring.coreos.com/instance: prometheus` — that's the label this
   # repo's movies-api ServiceMonitor carries. Same selector for rules.
@@ -39,6 +43,16 @@ spec:
     fsGroup: 2000
     seccompProfile:
       type: RuntimeDefault
-  # Use an emptyDir for now (single-node k3s, dataset rebuilds quickly).
-  # Swap to volumeClaimTemplate (storageClassName: local-path) when we want
-  # scrape data to survive pod restarts.
+  # Persist scrape data across pod restarts via a PVC. k3s ships
+  # `local-path` as the default StorageClass — single-node only,
+  # node-bound, ReadWriteOnce, which is exactly what a Prometheus
+  # StatefulSet wants. The operator turns this template into
+  # prometheus-prometheus-db-prometheus-prometheus-0.
+  storage:
+    volumeClaimTemplate:
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: local-path
+        resources:
+          requests:
+            storage: 5Gi

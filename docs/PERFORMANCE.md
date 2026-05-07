@@ -17,8 +17,11 @@ service is a chi handler, an in-memory `map` lookup, and `encoding/json`.
 | `GET /api/movies/{id}` |       10 ms |              ~0.10 ms |     100× |
 | `GET /api/actors/{id}` |       10 ms |              ~0.10 ms |     100× |
 
-Throughput on a single 500m-CPU pod: **800 RPS sustained, 0% 5xx**
-(spec target: 500 RPS, < 1% errors).
+Throughput on a single 500m-CPU pod: **584 RPS sustained, 0% 5xx**
+(spec target: 500 RPS, < 1% errors). The pod can drive ~800 RPS
+flat-out before CPU throttling; we deliberately pace the load
+generator just above the SLO to validate steady-state behaviour
+rather than peak.
 
 ## Why this matters
 
@@ -34,10 +37,13 @@ session-1 stack pick (alongside the deployable-binary story).
 ## How we measured
 
 - **Load generator:** `webv` (in-cluster Deployment, same image as
-  the API), running `--threads=1 --sleep=1ms --loop` against the
+  the API), running `--threads=2 --sleep=3ms --loop` against the
   `benchmark.yaml` suite (200 entries spanning every route + path-id
-  + query-string variants). Sleep cap lands sustained throughput at
-  ~544 RPS; bursting to `--threads=2` hits 800.
+  + query-string variants). The kernel timer on this host quantizes
+  Go's `time.Sleep` to roughly 1 ms slices, which means single-thread
+  RPS jumps in coarse steps (800 → 428 → 293) with no value near
+  500. Two threads at `sleep=3ms` give ~584 RPS sustained — just
+  above the spec target without saturating the pod.
 - **Histogram buckets:** custom sub-ms ladder starting at 100 µs
   (see [src/internal/httpapi/metrics.go](../src/internal/httpapi/metrics.go)).
   The Prometheus default starts at 5 ms, which is fine for typical

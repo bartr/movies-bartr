@@ -108,4 +108,55 @@ Picked Go 1.26 + chi v5 + `log/slog` + `flag`/env. Shipped a walking skeleton: `
 
 ---
 
+## Session 2 — 2026-05-07
+
+**Frame**
+- Goal: Schemas inferred (not invented) from `src/data/{movies,actors,ratings}.json`. Build `internal/store` with indexes by id, genre, year, rating bucket, actorId→movies, movieId→roles, plus `q=` text search over both movies and actors. Unit tests ≥80% on `internal/store` AND `internal/config`. Wire the loader into `main.go` so `/readyz` flips only after the dataset is in memory.
+- Out of scope: all `/api/*` handlers, query-param validation (page sizes, q length, id regex), Prometheus metrics, OpenAPI/Swagger, Web Validate suite, Grafana dashboards, NetworkPolicy, ServiceMonitor.
+- Failure condition: schemas guessed instead of inferred from the data; coverage <80% on either package; `q` search missing; or any `/api/*` route added.
+
+**Start time:** 02:04 UTC
+
+**RPI cycle**
+- Research: `.copilot-tracking/2026-05-07-data-layer-research.md`
+- Plan: `.copilot-tracking/2026-05-07-data-layer-plan.md`
+- Changes: `.copilot-tracking/2026-05-07-data-layer-changes.md`
+- Review: `.copilot-tracking/2026-05-07-data-layer-review.md`
+
+**Fit check**
+- Will this plan fit in 90–120 min? yes
+- Smallest cut if no: skip wiring the loader into `main.go`; ship store + tests only.
+- Decision: proceed.
+
+**During**
+- Drift moments: none. The "wire the loader into main.go" step was on the cut list and we kept it in — it was trivial once the store landed.
+- Parking lot: HTTP-layer query validation (q length 2–20, page sizes, id regexes, year/rating bounds) lands in session 3; consider a DTO seam if the wire format diverges from store types.
+
+**Close ritual**
+- [x] Tests green (`make test` race-clean; store 94.0 %, config 100.0 %, httpapi 100.0 %)
+- [x] FF-merge (`gh pr merge --rebase --delete-branch`)
+- [x] Tag (`git tag 0.2.0 && git push origin 0.2.0`)
+- [x] Repo memory updated (AGENTS.md "where the next session starts")
+- [x] Next session starter: Session 3 — wire `internal/store` to HTTP. Implement `/api/movies`, `/api/movies/{id}`, `/api/actors`, `/api/actors/{id}`, `/api/genres` per spec §6 with full query-param validation (`q` length 2–20, page bounds, id regex, year/rating ranges) and RFC 7807 error bodies. Store API stays frozen.
+
+**End time:** 02:12 UTC
+**Total focus minutes:** ~8
+**Tag shipped:** 0.2.0
+
+**One-paragraph summary**
+Built `internal/store` with all six required indexes (id, genre, year, rating bucket, actorId→movies, movieId→roles) plus `q=` substring search across both movies (title, genres, year, role names, characters) and actors (name, profession, linked movie titles). Loader validates id consistency across the four duplicate fields, rejects duplicates, and refuses to be ready if any movie lacks a rating record. Schemas were inferred from the real `src/data/*.json` files — the research doc enumerates every field, range, and category observed. Coverage: store 94.0 %, config 100.0 %, both with `-race`. `main.go` now blocks `/readyz` until the dataset is in memory and logs counts. No `/api/*` routes added. RPI artifacts written before each phase as usual.
+
+**Health signal**
+- Framing quality (1–5): 2 — frame was technically met but **under-scoped**.
+- Drift (yes/no): no.
+- Fit check honest (yes/no): **no** — answered "yes, fits in 90–120 min" without doing the math; the actual work was ~8 minutes. Should have either expanded the frame (fold in session 3's HTTP wiring + validation, since the store API is now frozen) or recorded an honest "this is a 15-minute session, proceed anyway."
+- Close complete (yes/no): yes — tests · merge · tag · memory · paragraph.
+
+**Retro (recorded post-tag, pre-session-3)**
+- That wasn't enough scope for this phase — it was only about 10 minutes. Two sessions in a row that finished well under the 90–120 min budget. Pattern: the frame is being written conservatively to "guarantee" it fits, which makes the fit check theatrical instead of useful.
+- Concrete change for session 3: write the frame to **fill** the budget. Default to bundling the next adjacent slice (e.g. metrics + ServiceMonitor onto session 3's HTTP work) and only cut at the fit check if there's a real reason. The cut list, not the frame, is where conservatism belongs.
+- Process worked: RPI artifacts before each phase, schema inferred not invented, tests with race + coverage above gate. Mechanical execution is fine — the calibration problem is upstream in the framing.
+
+---
+
 <!-- Copy the Session Template block above for each new session. -->

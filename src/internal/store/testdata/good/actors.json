@@ -1,0 +1,38 @@
+[
+  {
+    "id": "nm0000001", "key": "nm0000001", "_id": "nm0000001", "actorId": "nm0000001",
+    "type": "actor",
+    "name": "Alice Anderson",
+    "birthYear": 1970,
+    "deathYear": 0,
+    "profession": ["actress", "producer"],
+    "movies": [
+      {"movieId": "tt0000001", "title": "The Alpha File"},
+      {"movieId": "tt0000002", "title": "Beta Quest"}
+    ]
+  },
+  {
+    "id": "nm0000002", "key": "nm0000002", "_id": "nm0000002", "actorId": "nm0000002",
+    "type": "actor",
+    "name": "Bob Brown",
+    "birthYear": 1965,
+    "deathYear": 2020,
+    "profession": ["actor"],
+    "movies": [
+      {"movieId": "tt0000001", "title": "The Alpha File"},
+      {"movieId": "tt0000003", "title": "Gamma Rays"}
+    ]
+  },
+  {
+    "id": "nm0000003", "key": "nm0000003", "_id": "nm0000003", "actorId": "nm0000003",
+    "type": "actor",
+    "name": "Carol Coen",
+    "birthYear": 1955,
+    "deathYear": 0,
+    "profession": ["director", "producer"],
+    "movies": [
+      {"movieId": "tt0000001", "title": "The Alpha File"},
+      {"movieId": "tt0000002", "title": "Beta Quest"}
+    ]
+  }
+]

@@ -22,6 +22,7 @@ import (
 
 	"github.com/bartr/bartr-movies/internal/config"
 	"github.com/bartr/bartr-movies/internal/httpapi"
+	"github.com/bartr/bartr-movies/internal/store"
 	"github.com/bartr/bartr-movies/internal/version"
 )
 
@@ -49,11 +50,22 @@ func run(args []string) error {
 		slog.String("config", cfg.Redacted()),
 	)
 
-	// Synthetic dataset load: session 1 has no data; flip ready immediately.
-	// Session 2 replaces this with a real loader.
+	// Load the in-memory catalog. /readyz stays 503 until this completes.
 	var ready atomic.Bool
-	ready.Store(true)
-	logger.Info("dataset ready (synthetic, session 1)")
+	go func() {
+		s, err := store.Load(cfg.DataDir)
+		if err != nil {
+			logger.Error("dataset load failed", slog.String("err", err.Error()))
+			return
+		}
+		c := s.Stats()
+		logger.Info("dataset ready",
+			slog.Int("movies", c.Movies),
+			slog.Int("actors", c.Actors),
+			slog.Int("genres", c.Genres),
+		)
+		ready.Store(true)
+	}()
 
 	router := httpapi.NewRouter(version.Version, func() bool { return ready.Load() })
 

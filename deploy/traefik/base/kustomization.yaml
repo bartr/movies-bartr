@@ -1,0 +1,13 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# Patches the k3s-bundled Traefik chart with extra entrypoints. The
+# chart itself is reconciled by the k3s helm-controller from
+# `kube-system/HelmChart traefik`; we only own the values overlay here.
+#
+# This file is informational on a fresh node — k3s only re-renders the
+# chart when the HelmChartConfig changes — but is the durable
+# source-of-truth for the entrypoint table referenced by AGENTS.md and
+# the per-component Ingresses (e.g. deploy/prometheus).
+resources:
+  - entrypoints.yaml

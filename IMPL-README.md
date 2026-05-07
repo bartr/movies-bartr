@@ -27,8 +27,9 @@ src/                       Go module + Dockerfile + data
   go.mod, go.sum
 deploy/movies/base/        ns + deployment + service + ingress + servicemonitor + networkpolicy
 deploy/movies/overlays/dev seam for dev-only resources
-deploy/prometheus/         skeleton — populate when bringing the cluster Prometheus instance under repo control
-deploy/prometheus-operator skeleton — pin upstream bundle when bringing the operator under repo control
+deploy/prometheus/         monitoring ns: SA + RBAC + Prometheus CR + Service + Ingress
+deploy/prometheus-operator pinned upstream operator bundle (Kustomize remote resource)
+deploy/traefik/            k3s Traefik HelmChartConfig (entrypoint ports)
 .copilot-tracking/         RPI artifacts (research/plan/changes/review)
 Makefile                   inner-loop wrapper (run from repo root)
 ```

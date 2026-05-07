@@ -5,7 +5,7 @@
 
 ## 1. The decision space
 
-The spec ([spec.md §1](../spec.md)) is deliberately stack-agnostic. Candidates considered:
+The spec ([spec.md §1](../docs/spec.md)) is deliberately stack-agnostic. Candidates considered:
 
 | Stack            | Image size (distroless/alpine, hello-world API) | Cold start | Prom client | OpenAPI story  | Notes |
 |------------------|------------------------------------------------|------------|-------------|----------------|-------|
@@ -32,7 +32,7 @@ The spec ([spec.md §1](../spec.md)) is deliberately stack-agnostic. Candidates 
 - No `viper`/`cobra` config — `flag` + env is enough.
 - No structured-logging library beyond `log/slog`.
 - No metrics library yet.
-- No Helm — Kustomize only ([spec §8](../spec.md#8-kubernetes-manifests)).
+- No Helm — Kustomize only ([spec §8](../docs/spec.md#8-kubernetes-manifests)).
 
 ## 3. Local k8s — what's actually on this host
 
@@ -48,7 +48,7 @@ Toolchain probe (run today):
 /usr/bin/make
 ```
 
-`k3d` and `kind` are absent. Native `k3s` is installed. The README ([README.md §1](../README.md)) lists k3d/kind/minikube as acceptable, but the spec ([spec.md §2](../spec.md#2-goals)) says "single-node k3s cluster (and any conformant Kubernetes: k3d, kind, minikube, AKS, EKS, GKE)". Native k3s is in-spec. **Use native k3s.** This avoids installing yet another tool inside session 1.
+`k3d` and `kind` are absent. Native `k3s` is installed. The README ([README.md §1](../README.md)) lists k3d/kind/minikube as acceptable, but the spec ([spec.md §2](../docs/spec.md#2-goals)) says "single-node k3s cluster (and any conformant Kubernetes: k3d, kind, minikube, AKS, EKS, GKE)". Native k3s is in-spec. **Use native k3s.** This avoids installing yet another tool inside session 1.
 
 For loading a locally-built image into k3s without a registry: `k3s ctr images import` from a `docker save` tarball. Documented pattern. Avoids running a local registry in session 1.
 
@@ -56,8 +56,8 @@ For loading a locally-built image into k3s without a registry: `k3s ctr images i
 
 From spec §6:
 
-- `GET /version` → `200 OK`, `Content-Type: text/plain; charset=utf-8`, body = semver + single `\n`. Must work even before `/readyz`. Source: [spec.md §6.1](../spec.md#61-version-response).
-- `GET /healthz` → plaintext `pass` / `warn` / `fail`. Source: [spec.md §6](../spec.md#6-api-surface).
+- `GET /version` → `200 OK`, `Content-Type: text/plain; charset=utf-8`, body = semver + single `\n`. Must work even before `/readyz`. Source: [spec.md §6.1](../docs/spec.md#61-version-response).
+- `GET /healthz` → plaintext `pass` / `warn` / `fail`. Source: [spec.md §6](../docs/spec.md#6-api-surface).
 - `GET /readyz` → 200 only after dataset loaded. Session 1 has no dataset, so `/readyz` will return 200 immediately after a synthetic "ready" flag is flipped at startup (no data loading yet — that's session 2).
 
 `/` → `/swagger` redirect is in §6 but bound to swagger which is a session-5 concern. Defer.

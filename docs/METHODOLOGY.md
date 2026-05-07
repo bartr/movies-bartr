@@ -28,7 +28,7 @@ When you feel the urge to pull a thread outside your frame, write it in the *par
 - FF-merge: `gh pr merge --rebase --delete-branch`
 - Tag: `git tag X.Y.Z && git push origin X.Y.Z`
 - Update repo memory (`CLAUDE.md`, `.github/copilot-instructions.md`, etc. — whatever your AI reads)
-- One paragraph in [`session-log.md`](session-log.md): what you built, what you decided, where the next session starts.
+- One paragraph in [`session-log.md`](../session-log.md): what you built, what you decided, where the next session starts.
 
 That paragraph is the compounding mechanism. Without it, each session starts cold.
 
@@ -57,7 +57,7 @@ Between **Plan** and **Implement**, take two minutes:
 
 1. Will this plan fit in 90–120 minutes? Honest gut, not optimistic.
 2. If no, what is the smallest cut that keeps the session release-able? Name it.
-3. Proceed, cut, or re-frame? Record the decision in [`session-log.md`](session-log.md).
+3. Proceed, cut, or re-frame? Record the decision in [`session-log.md`](../session-log.md).
 
 The fit check is the cheapest moment to cut scope. A deleted bullet costs nothing; abandoned implementation work costs the rest of the session. **Never skip it.**
 
@@ -79,7 +79,7 @@ One session ≈ one RPI cycle. If you need more than one cycle, your session is 
 
 Concrete shape from a real planning session. Your stack/timing will differ; the *structure* is what matters.
 
-**Frame** (written into [`session-log.md`](session-log.md) before starting)
+**Frame** (written into [`session-log.md`](../session-log.md) before starting)
 - Goal: Service end-to-end on localhost — data loaded, all `GET` endpoints with validation, integration tests, ≥80% coverage.
 - Out of scope: `/healthz`, `/metrics`, container, k8s manifests.
 - Failure condition: schema invented rather than inferred from data files; any validation rule missing a negative test.
@@ -106,13 +106,13 @@ Coverage report green. One follow-up logged. Closes cleanly.
 
 **Close ritual**
 
-`go test -race ./...` green · PR opened, self-reviewed, `gh pr merge --rebase --delete-branch` · `git tag 0.1.0 && git push origin 0.1.0` · repo memory updated with the inferred schema decisions · one paragraph in [`session-log.md`](session-log.md) + next-session starter.
+`go test -race ./...` green · PR opened, self-reviewed, `gh pr merge --rebase --delete-branch` · `git tag 0.1.0 && git push origin 0.1.0` · repo memory updated with the inferred schema decisions · one paragraph in [`session-log.md`](../session-log.md) + next-session starter.
 
 ## Your Inner Loop, Step by Step
 
 For each session:
 
-1. **Frame** — fill in the next blank session block in [`session-log.md`](session-log.md). Two minutes.
+1. **Frame** — fill in the next blank session block in [`session-log.md`](../session-log.md). Two minutes.
 2. **Research** — new chat. Prompt: *"Research only — investigate X, cite findings with file paths and line numbers, recommend one approach. Do not plan or implement. Save your output to `.copilot-tracking/<today>-<topic>-research.md`."*
 3. **New chat** (or `/clear`). Open the research file in your editor.
 4. **Plan** — *"Plan only — read the research file, produce an ordered checkbox task list with file/line refs and exit criteria. Do not implement."*
@@ -121,7 +121,7 @@ For each session:
 7. **Implement** — *"Implement only — execute the plan task by task. Verify after each. Record changes in `.copilot-tracking/<today>-<topic>-changes.md`."*
 8. **New chat.** Open plan + changes log.
 9. **Review** — *"Review only — validate the implementation against the research and plan. Run lint/build/test. Identify follow-ups. Save to `.copilot-tracking/<today>-<topic>-review.md`."*
-10. **Close ritual** — green tests, FF-merge, tag, repo memory, paragraph + next-session starter in [`session-log.md`](session-log.md).
+10. **Close ritual** — green tests, FF-merge, tag, repo memory, paragraph + next-session starter in [`session-log.md`](../session-log.md).
 
 ## When to Skip
 

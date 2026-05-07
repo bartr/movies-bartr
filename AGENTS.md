@@ -6,7 +6,7 @@
 ## Project
 
 - This repo is the **Movies** experiment harness ([README.md](README.md)).
-- Spec: [spec.md](spec.md). Methodology: [METHODOLOGY.md](METHODOLOGY.md). Experiment: [EXPERIMENT.md](EXPERIMENT.md). Log: [session-log.md](session-log.md).
+- Spec: [spec.md](docs/spec.md). Methodology: [METHODOLOGY.md](docs/METHODOLOGY.md). Experiment: [EXPERIMENT.md](docs/EXPERIMENT.md). Log: [session-log.md](session-log.md).
 - We follow **sessions + RPI**. Every session = one RPI cycle = artifacts in `.copilot-tracking/` + a tagged dot-release.
 
 ## Stack (decided session 1)

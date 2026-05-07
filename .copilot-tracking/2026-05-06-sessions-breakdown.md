@@ -5,7 +5,7 @@
 > [session-log.md](../session-log.md). This file is the *initial* plan, not the
 > contract.
 >
-> Spec: [spec.md](../spec.md) · Methodology: [METHODOLOGY.md](../METHODOLOGY.md) · Experiment: [EXPERIMENT.md](../EXPERIMENT.md)
+> Spec: [spec.md](../docs/spec.md) · Methodology: [METHODOLOGY.md](../docs/METHODOLOGY.md) · Experiment: [EXPERIMENT.md](../docs/EXPERIMENT.md)
 
 ## Stack (decided session 1)
 

@@ -54,6 +54,14 @@ spec:
       ports:
         - protocol: TCP
           port: 8080
+    # webv load generator (same namespace).
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: webv
+      ports:
+        - protocol: TCP
+          port: 8080
   egress:
     # Cluster DNS — required for any name resolution. The service itself
     # makes no other outbound calls.

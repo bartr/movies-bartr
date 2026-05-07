@@ -1,0 +1,35 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: webv
+  namespace: movies
+  labels:
+    app.kubernetes.io/name: webv
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: webv
+  policyTypes:
+    - Ingress
+    - Egress
+  # webv does not accept inbound traffic.
+  ingress: []
+  egress:
+    # Cluster DNS — required to resolve movies-api Service name.
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+    # The only HTTP target is movies-api in this namespace on 8080.
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: movies-api
+      ports:
+        - protocol: TCP
+          port: 8080

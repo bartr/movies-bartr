@@ -1,6 +1,8 @@
 // Package httpapi builds the HTTP router. Session 1 shipped /version,
-// /healthz, /readyz; session 3 adds the /api/* read endpoints with full
-// query/path validation and RFC 7807 error bodies.
+// /healthz, /readyz; session 3 added the /api/* read endpoints with full
+// query/path validation and RFC 7807 error bodies; session 5 adds the
+// OpenAPI document, Swagger UI, root redirect, robots.txt, and a JSON
+// request-log middleware.
 package httpapi
 
 import (
@@ -19,6 +21,13 @@ type ReadyFunc func() bool
 func NewRouter(version string, ready ReadyFunc, store StoreFunc) http.Handler {
 	r := chi.NewRouter()
 	r.Use(middleware.Recoverer)
+	r.Use(requestLogger())
+
+	r.Get("/", rootRedirectHandler())
+	r.Get("/robots.txt", robotsHandler())
+	r.Get("/swagger", swaggerUIHandler())
+	r.Get("/swagger/", swaggerUIHandler())
+	r.Get("/swagger/v1/swagger.json", swaggerJSONHandler())
 
 	r.Get("/version", versionHandler(version))
 	r.Get("/healthz", healthzHandler())

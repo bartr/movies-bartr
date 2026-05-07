@@ -107,6 +107,26 @@ along with the suites at `/webv-suites/`, so the in-cluster Deployment
 (`http://movies-api.movies.svc.cluster.local:8080`) and runs in a loop;
 it always exits 0 on signal so K8s does not flag it as failed.
 
+#### Tuning the live load generator without a rebuild
+
+The `args:` are positional in [deploy/webv/base/deployment.yaml](deploy/webv/base/deployment.yaml)
+(0=`--url`, 1=`--files`, 2=`--loop`, 3=`--threads=1`, 4=`--sleep=2`,
+5=`--verbose`). Patch a single arg in place to retune rate without
+editing the manifest or rebuilding the image — Kubernetes auto-rolls:
+
+```bash
+# halve the per-thread sleep -> ~doubles RPS
+kubectl -n movies patch deploy webv --type=json \
+  -p='[{"op":"replace","path":"/spec/template/spec/containers/0/args/4","value":"--sleep=1"}]'
+
+# bump worker threads to 2
+kubectl -n movies patch deploy webv --type=json \
+  -p='[{"op":"replace","path":"/spec/template/spec/containers/0/args/3","value":"--threads=2"}]'
+```
+
+`make webv-deploy` re-syncs from the manifest if you want to drop the
+patch.
+
 ## What's done (tag 0.7.0)
 
 - **Session 1 (0.1.0):** `/version`, `/healthz`, `/readyz` walking skeleton on distroless; non-root, RO root FS, all caps dropped; Kustomize-only manifests; Traefik Ingress on `localhost`.

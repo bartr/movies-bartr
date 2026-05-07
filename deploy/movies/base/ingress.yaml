@@ -5,6 +5,13 @@ metadata:
   namespace: movies
   labels:
     app.kubernetes.io/name: movies-api
+  annotations:
+    # Without this annotation Traefik attaches the Host(localhost) router
+    # to every entrypoint (prometheus 9090, grafana 3000, ...), so
+    # http://localhost:9090/ would resolve to the movies-api home page
+    # instead of Prometheus. Pin the router to the default web entrypoint
+    # (host port 80) only.
+    traefik.ingress.kubernetes.io/router.entrypoints: web
 spec:
   ingressClassName: traefik
   rules:

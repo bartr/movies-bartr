@@ -3,7 +3,7 @@
   "info": {
     "title": "Movies API",
     "description": "Read-only catalog of movies, actors, and genres. See docs/spec.md for the full contract.",
-    "version": "0.7.0",
+    "version": "0.8.0",
     "license": { "name": "MIT" }
   },
   "servers": [
@@ -162,7 +162,7 @@
         "responses": {
           "200": {
             "description": "Semver, no surrounding whitespace beyond a single trailing newline.",
-            "content": { "text/plain; charset=utf-8": { "schema": { "type": "string", "example": "0.7.0\n" } } }
+            "content": { "text/plain; charset=utf-8": { "schema": { "type": "string", "example": "0.8.0\n" } } }
           }
         }
       }

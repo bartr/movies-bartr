@@ -1,7 +1,7 @@
 # movies-api Makefile — minimal wrapper around the inner-loop steps
 # documented in IMPL-README.md. Each target is independently runnable.
 
-VERSION     ?= 0.7.0
+VERSION     ?= 0.8.0
 IMAGE       ?= movies-api:$(VERSION)
 TARBALL     ?= /tmp/movies-api-$(VERSION).tar
 KCTL        ?= sudo k3s kubectl
@@ -11,12 +11,14 @@ PROM_OP_DIR ?= deploy/prometheus-operator/overlays/dev
 PROM_DIR    ?= deploy/prometheus/overlays/dev
 GRAFANA_DIR ?= deploy/grafana/overlays/dev
 TRAEFIK_DIR ?= deploy/traefik/overlays/dev
+WEBV_DIR    ?= deploy/webv/overlays/dev
 
 .PHONY: help build test image import deploy verify verify-ingress undeploy clean \
 	prom-operator-deploy prom-deploy prom-verify prom-undeploy prom-operator-undeploy \
 	prom-tombstone-stale-routes \
 	grafana-deploy grafana-verify grafana-undeploy \
-	traefik-apply
+	traefik-apply \
+	webv-install webv-smoke webv-deploy webv-verify webv-undeploy
 
 help:
 	@echo "Targets:"
@@ -38,6 +40,11 @@ help:
 	@echo "  grafana-verify        - check /api/health, datasource, dashboard, star"
 	@echo "  grafana-undeploy      - delete Grafana"
 	@echo "  traefik-apply         - apply Traefik HelmChartConfig (entrypoints)"
+	@echo "  webv-install          - go install webv to ~/go/bin (with version ldflags)"
+	@echo "  webv-smoke            - run webv against http://127.0.0.1 with src/webv/test.json"
+	@echo "  webv-deploy           - apply webv Job (movies ns)"
+	@echo "  webv-verify           - tail webv pod logs and confirm passes"
+	@echo "  webv-undeploy         - delete webv overlay"
 	@echo "  clean                 - go clean + rm tarball"
 
 build:
@@ -190,3 +197,41 @@ grafana-undeploy:
 # `prometheus`, `grafana`, etc. host ports.
 traefik-apply:
 	kustomize build $(TRAEFIK_DIR) | $(KCTL) apply -f -
+
+# ---------------------------------------------------------------------- webv
+# `webv-install` builds the CLI and installs it into $GOBIN (~/go/bin),
+# which is on PATH on this host. Same VERSION as movies-api.
+# `webv-smoke` runs one pass against the local Traefik web entrypoint
+# using the same suite as the in-cluster Job.
+# `webv-deploy` applies the Job into the `movies` namespace; the Job
+# uses the in-cluster Service URL and runs --loop, so the pod stays up
+# until `make webv-undeploy`.
+webv-install:
+	cd $(SRC) && go install \
+		-trimpath \
+		-ldflags "-s -w -X github.com/bartr/bartr-movies/internal/version.Version=$(VERSION)" \
+		./cmd/webv
+	@command -v webv >/dev/null && webv --version || echo "webv installed; ensure ~/go/bin is on PATH"
+
+webv-smoke:
+	webv --url http://127.0.0.1 --files $(SRC)/webv/test.json --threads 2 --verbose | tail -20
+
+webv-deploy:
+	kustomize build $(WEBV_DIR) | $(KCTL) apply -f -
+	$(KCTL) -n movies rollout status deploy/webv --timeout=60s
+
+webv-verify:
+	@bash -c '\
+		set -e; \
+		echo "--- webv pod ---"; \
+		$(KCTL) -n movies get pod -l app.kubernetes.io/name=webv -o wide; \
+		echo "--- recent log lines (last 20) ---"; \
+		POD=$$($(KCTL) -n movies get pod -l app.kubernetes.io/name=webv -o jsonpath="{.items[0].metadata.name}"); \
+		$(KCTL) -n movies logs $$POD --tail=20; \
+		echo "--- summary so far ---"; \
+		$(KCTL) -n movies logs $$POD | tail -5; \
+		echo "OK: webv is running"; \
+	'
+
+webv-undeploy:
+	kustomize build $(WEBV_DIR) | $(KCTL) delete --ignore-not-found -f -

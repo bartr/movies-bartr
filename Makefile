@@ -1,18 +1,21 @@
 # movies-api Makefile — minimal wrapper around the inner-loop steps
 # documented in IMPL-README.md. Each target is independently runnable.
 
-VERSION    ?= 0.6.0
-IMAGE      ?= movies-api:$(VERSION)
-TARBALL    ?= /tmp/movies-api-$(VERSION).tar
-KCTL       ?= sudo k3s kubectl
-SRC        ?= src
-MOVIES_DIR ?= deploy/movies/overlays/dev
+VERSION     ?= 0.7.0
+IMAGE       ?= movies-api:$(VERSION)
+TARBALL     ?= /tmp/movies-api-$(VERSION).tar
+KCTL        ?= sudo k3s kubectl
+SRC         ?= src
+MOVIES_DIR  ?= deploy/movies/overlays/dev
 PROM_OP_DIR ?= deploy/prometheus-operator/overlays/dev
 PROM_DIR    ?= deploy/prometheus/overlays/dev
+GRAFANA_DIR ?= deploy/grafana/overlays/dev
 TRAEFIK_DIR ?= deploy/traefik/overlays/dev
 
 .PHONY: help build test image import deploy verify verify-ingress undeploy clean \
 	prom-operator-deploy prom-deploy prom-verify prom-undeploy prom-operator-undeploy \
+	prom-tombstone-stale-routes \
+	grafana-deploy grafana-verify grafana-undeploy \
 	traefik-apply
 
 help:
@@ -29,7 +32,11 @@ help:
 	@echo "  prom-deploy           - apply Prometheus instance (monitoring ns)"
 	@echo "  prom-verify           - confirm Prometheus is scraping movies-api"
 	@echo "  prom-undeploy         - delete Prometheus instance"
+	@echo "  prom-tombstone-stale-routes - delete http_* series with route!~/api/.*"
 	@echo "  prom-operator-undeploy- delete prometheus-operator"
+	@echo "  grafana-deploy        - apply Grafana (monitoring ns)"
+	@echo "  grafana-verify        - check /api/health, datasource, dashboard, star"
+	@echo "  grafana-undeploy      - delete Grafana"
 	@echo "  traefik-apply         - apply Traefik HelmChartConfig (entrypoints)"
 	@echo "  clean                 - go clean + rm tarball"
 
@@ -108,8 +115,75 @@ prom-verify:
 prom-undeploy:
 	kustomize build $(PROM_DIR) | $(KCTL) delete --ignore-not-found -f -
 
+# Tombstone every http_* series whose `route` label is NOT `/api/...`.
+# Used after the metrics middleware is tightened (e.g. dropping
+# /healthz, /version, or `unmatched`) — Prometheus retains old labels
+# for the full retention window otherwise. Requires `enableAdminAPI:
+# true` on the Prometheus CR (already set in deploy/prometheus/base/
+# prometheus.yaml).
+prom-tombstone-stale-routes:
+	@bash -c '\
+		set -e; \
+		H=http://127.0.0.1:9090; \
+		echo "--- before ---"; \
+		curl -sS -G $$H/api/v1/label/route/values | head -c 500; echo; \
+		for m in http_requests_total http_request_duration_seconds_bucket http_request_duration_seconds_sum http_request_duration_seconds_count; do \
+			echo "--- delete_series $$m route!~/api/.* ---"; \
+			curl -sS -X POST -G "$$H/api/v1/admin/tsdb/delete_series" \
+				--data-urlencode "match[]=$$m{route!~\"/api/.*\"}"; echo; \
+		done; \
+		echo "--- clean_tombstones ---"; \
+		curl -sS -X POST $$H/api/v1/admin/tsdb/clean_tombstones; echo; \
+		echo "--- after ---"; \
+		curl -sS -G $$H/api/v1/label/route/values | head -c 500; echo; \
+	'
+
 prom-operator-undeploy:
 	kustomize build $(PROM_OP_DIR) | $(KCTL) delete --ignore-not-found -f -
+
+# ------------------------------------------------------------------- grafana
+# `grafana-deploy` applies Grafana into the `monitoring` namespace and
+# waits for the Deployment + bootstrap Job to complete. The Job is what
+# POSTs the dashboard via the Grafana HTTP API (so the UI stays
+# editable, unlike file-provisioned dashboards) and then stars it for
+# admin. `grafana-verify` exercises the Ingress on host port 3000 and
+# the dashboard end-to-end.
+grafana-deploy:
+	# Delete the bootstrap Job before re-applying: Job pod templates are
+	# immutable and the configMap volume reference changes every time the
+	# dashboard JSON does (kustomize hashes the dashboard ConfigMap).
+	$(KCTL) -n monitoring delete job grafana-bootstrap --ignore-not-found
+	kustomize build $(GRAFANA_DIR) | $(KCTL) apply -f -
+	$(KCTL) -n monitoring rollout status deploy/grafana --timeout=120s
+	$(KCTL) -n monitoring wait --for=condition=complete job/grafana-bootstrap --timeout=120s
+
+grafana-verify:
+	@bash -c '\
+		set -e; \
+		H=http://127.0.0.1:3000; \
+		echo "--- /api/health ---"; \
+		curl -fsS $$H/api/health | tee /dev/stderr | grep -q "\"database\": \"ok\"" || (echo "FAIL: grafana health"; exit 1); \
+		echo; \
+		echo "--- datasource (anon viewer) ---"; \
+		DS=$$(curl -fsS $$H/api/datasources/name/prometheus); echo "$$DS"; \
+		echo "$$DS" | grep -q "\"type\":\"prometheus\"" || (echo "FAIL: datasource type"; exit 1); \
+		echo "$$DS" | grep -q "prometheus.monitoring.svc:9090" || (echo "FAIL: datasource url"; exit 1); \
+		echo "--- dashboard movies-api (anon viewer) ---"; \
+		DB=$$(curl -fsS $$H/api/dashboards/uid/movies-api); \
+		echo "$$DB" | head -c 240; echo; \
+		echo "$$DB" | grep -q "\"title\":\"Movies API\"" || (echo "FAIL: dashboard title"; exit 1); \
+		echo "--- admin stars (auth) ---"; \
+		ST=$$(curl -fsS -u admin:Passw0rd $$H/api/user/stars); echo "$$ST"; \
+		echo "$$ST" | grep -q "movies-api" || (echo "FAIL: movies-api not in admin stars"; exit 1); \
+		echo "--- live data via grafana datasource proxy ---"; \
+		Q=$$(curl -fsS $$H/api/datasources/proxy/uid/prometheus/api/v1/query?query=up); \
+		echo "$$Q" | head -c 240; echo; \
+		echo "$$Q" | grep -q "\"status\":\"success\"" || (echo "FAIL: prometheus proxy query"; exit 1); \
+		echo "OK: grafana up, datasource live, dashboard provisioned + starred"; \
+	'
+
+grafana-undeploy:
+	kustomize build $(GRAFANA_DIR) | $(KCTL) delete --ignore-not-found -f -
 
 # k3s reconciles the bundled Traefik chart from this HelmChartConfig.
 # Apply re-runs the chart with the entrypoint values, recreating the

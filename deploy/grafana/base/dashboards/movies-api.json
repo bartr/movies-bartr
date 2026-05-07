@@ -4,7 +4,7 @@
   "tags": ["movies", "bartr"],
   "timezone": "browser",
   "schemaVersion": 39,
-  "version": 1,
+  "version": 2,
   "refresh": "10s",
   "time": { "from": "now-15m", "to": "now" },
   "templating": { "list": [] },
@@ -15,7 +15,7 @@
       "id": 1,
       "title": "Total requests",
       "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "gridPos": { "x": 0, "y": 0, "w": 6, "h": 4 },
+      "gridPos": { "x": 0, "y": 0, "w": 4, "h": 4 },
       "fieldConfig": {
         "defaults": { "unit": "short", "decimals": 0, "noValue": "0" },
         "overrides": []
@@ -40,7 +40,7 @@
       "id": 2,
       "title": "In-flight",
       "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "gridPos": { "x": 6, "y": 0, "w": 6, "h": 4 },
+      "gridPos": { "x": 4, "y": 0, "w": 4, "h": 4 },
       "fieldConfig": {
         "defaults": { "unit": "short", "decimals": 0, "noValue": "0" },
         "overrides": []
@@ -62,11 +62,37 @@
     },
     {
       "type": "stat",
+      "id": 7,
+      "title": "4xx rate (5m)",
+      "description": "Client errors per second over the last 5 minutes. Falls back to 0 when no 4xx samples exist so the panel never reads 'No data'.",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "x": 8, "y": 0, "w": 4, "h": 4 },
+      "fieldConfig": {
+        "defaults": { "unit": "reqps", "decimals": 1, "noValue": "0" },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "colorMode": "value",
+        "graphMode": "area",
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "sum(rate(http_requests_total{route=~\"/api/.*\",code=~\"4..\"}[5m])) or vector(0)",
+          "legendFormat": "4xx/s"
+        }
+      ]
+    },
+    {
+      "type": "stat",
       "id": 3,
       "title": "5xx rate (5m)",
       "description": "Errors per second over the last 5 minutes. Falls back to 0 when no 5xx samples exist so the panel never reads 'No data'.",
       "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "gridPos": { "x": 12, "y": 0, "w": 6, "h": 4 },
+      "gridPos": { "x": 12, "y": 0, "w": 4, "h": 4 },
       "fieldConfig": {
         "defaults": { "unit": "reqps", "decimals": 1, "noValue": "0" },
         "overrides": []
@@ -92,7 +118,7 @@
       "title": "Active workers",
       "description": "Concurrent units of in-process work. A healthy idle service hovers in the single digits; sustained growth without traffic indicates a stuck worker leak.",
       "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "gridPos": { "x": 18, "y": 0, "w": 6, "h": 4 },
+      "gridPos": { "x": 16, "y": 0, "w": 4, "h": 4 },
       "fieldConfig": {
         "defaults": { "unit": "short", "decimals": 0, "noValue": "0" },
         "overrides": []
@@ -119,7 +145,7 @@
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "gridPos": { "x": 0, "y": 4, "w": 12, "h": 8 },
       "fieldConfig": {
-        "defaults": { "unit": "reqps", "decimals": 2, "custom": { "drawStyle": "line", "lineWidth": 1, "fillOpacity": 10 } },
+        "defaults": { "unit": "reqps", "decimals": 0, "custom": { "drawStyle": "line", "lineWidth": 1, "fillOpacity": 10 } },
         "overrides": []
       },
       "options": {
@@ -142,7 +168,7 @@
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "gridPos": { "x": 12, "y": 4, "w": 12, "h": 8 },
       "fieldConfig": {
-        "defaults": { "unit": "ms", "decimals": 0, "custom": { "drawStyle": "line", "lineWidth": 1, "fillOpacity": 10 } },
+        "defaults": { "unit": "ms", "decimals": 3, "custom": { "drawStyle": "line", "lineWidth": 1, "fillOpacity": 10 } },
         "overrides": []
       },
       "options": {

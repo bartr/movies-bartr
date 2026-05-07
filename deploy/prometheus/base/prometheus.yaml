@@ -1,0 +1,44 @@
+apiVersion: monitoring.coreos.com/v1
+kind: Prometheus
+metadata:
+  name: prometheus
+  namespace: monitoring
+  labels:
+    app.kubernetes.io/name: prometheus
+spec:
+  replicas: 1
+  serviceAccountName: prometheus
+  scrapeInterval: 30s
+  evaluationInterval: 30s
+  retention: 7d
+  externalLabels:
+    cluster: z01
+  # Discover any ServiceMonitor in any namespace whose labels include
+  # `monitoring.coreos.com/instance: prometheus` — that's the label this
+  # repo's movies-api ServiceMonitor carries. Same selector for rules.
+  serviceMonitorNamespaceSelector: {}
+  serviceMonitorSelector:
+    matchLabels:
+      monitoring.coreos.com/instance: prometheus
+  podMonitorNamespaceSelector: {}
+  podMonitorSelector:
+    matchLabels:
+      monitoring.coreos.com/instance: prometheus
+  ruleNamespaceSelector: {}
+  ruleSelector: {}
+  resources:
+    requests:
+      cpu: "100m"
+      memory: "256Mi"
+    limits:
+      cpu: "500m"
+      memory: "1Gi"
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 1000
+    fsGroup: 2000
+    seccompProfile:
+      type: RuntimeDefault
+  # Use an emptyDir for now (single-node k3s, dataset rebuilds quickly).
+  # Swap to volumeClaimTemplate (storageClassName: local-path) when we want
+  # scrape data to survive pod restarts.

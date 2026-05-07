@@ -7,20 +7,28 @@ TARBALL    ?= /tmp/movies-api-$(VERSION).tar
 KCTL       ?= sudo k3s kubectl
 SRC        ?= src
 MOVIES_DIR ?= deploy/movies/overlays/dev
+PROM_OP_DIR ?= deploy/prometheus-operator/overlays/dev
+PROM_DIR    ?= deploy/prometheus/overlays/dev
 
-.PHONY: help build test image import deploy verify verify-ingress undeploy clean
+.PHONY: help build test image import deploy verify verify-ingress undeploy clean \
+	prom-operator-deploy prom-deploy prom-verify prom-undeploy prom-operator-undeploy
 
 help:
 	@echo "Targets:"
-	@echo "  build          - go build ./..."
-	@echo "  test           - go test -race ./..."
-	@echo "  image          - docker build -t $(IMAGE) ./src"
-	@echo "  import         - docker save | k3s ctr images import"
-	@echo "  deploy         - kustomize build | kubectl apply"
-	@echo "  verify         - port-forward + curl all 3 endpoints (Service)"
-	@echo "  verify-ingress - curl all 3 endpoints via Traefik on http://localhost"
-	@echo "  undeploy       - delete dev overlay"
-	@echo "  clean          - go clean + rm tarball"
+	@echo "  build                 - go build ./..."
+	@echo "  test                  - go test -race ./..."
+	@echo "  image                 - docker build -t $(IMAGE) ./src"
+	@echo "  import                - docker save | k3s ctr images import"
+	@echo "  deploy                - kustomize build movies | kubectl apply"
+	@echo "  verify                - curl /version /healthz /readyz /metrics"
+	@echo "  verify-ingress        - alias of verify"
+	@echo "  undeploy              - delete movies overlay"
+	@echo "  prom-operator-deploy  - apply prometheus-operator (CRDs + operator)"
+	@echo "  prom-deploy           - apply Prometheus instance (monitoring ns)"
+	@echo "  prom-verify           - confirm Prometheus is scraping movies-api"
+	@echo "  prom-undeploy         - delete Prometheus instance"
+	@echo "  prom-operator-undeploy- delete prometheus-operator"
+	@echo "  clean                 - go clean + rm tarball"
 
 build:
 	cd $(SRC) && go build ./...
@@ -67,3 +75,35 @@ verify verify-ingress:
 clean:
 	cd $(SRC) && go clean
 	rm -f $(TARBALL)
+
+# ---------------------------------------------------------------- prometheus
+# `prom-operator-deploy` installs (or upgrades) the upstream operator.
+# `prom-deploy` creates the Prometheus instance in the `monitoring` ns and
+# waits for it to become Ready. `prom-verify` checks that movies-api shows
+# up as a healthy scrape target.
+prom-operator-deploy:
+	kustomize build $(PROM_OP_DIR) | $(KCTL) apply --server-side --force-conflicts -f -
+	$(KCTL) -n default rollout status deploy/prometheus-operator --timeout=120s
+
+prom-deploy:
+	kustomize build $(PROM_DIR) | $(KCTL) apply -f -
+	$(KCTL) -n monitoring wait --for=condition=Available prometheus/prometheus --timeout=120s
+
+prom-verify:
+	@bash -c '\
+		set -e; \
+		echo "--- prometheus pod ---"; \
+		$(KCTL) -n monitoring get pod -l app.kubernetes.io/name=prometheus -o wide; \
+		echo "--- targets (movies-api) ---"; \
+		POD=$$($(KCTL) -n monitoring get pod -l app.kubernetes.io/name=prometheus -o jsonpath="{.items[0].metadata.name}"); \
+		$(KCTL) -n monitoring exec $$POD -c prometheus -- wget -qO- "http://127.0.0.1:9090/api/v1/targets?state=active" | grep -o "\"health\":\"[a-z]*\"" | sort -u; \
+		echo "--- query http_requests_total ---"; \
+		$(KCTL) -n monitoring exec $$POD -c prometheus -- wget -qO- "http://127.0.0.1:9090/api/v1/query?query=http_requests_total" | head -c 400; echo; \
+		echo "OK: Prometheus is up and scraping"; \
+	'
+
+prom-undeploy:
+	kustomize build $(PROM_DIR) | $(KCTL) delete --ignore-not-found -f -
+
+prom-operator-undeploy:
+	kustomize build $(PROM_OP_DIR) | $(KCTL) delete --ignore-not-found -f -

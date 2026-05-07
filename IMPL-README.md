@@ -65,15 +65,18 @@ make image import deploy verify VERSION=0.1.1
 ### Web Validate (`webv`) — session 8
 
 `webv` is a small Web Validate-compatible runner ([cmd/webv](src/cmd/webv)).
-It reads JSON suites in the shape used by [test.json](test.json),
-issues HTTP requests against a base URL, and validates response
-status code, content type, and (optionally) body length. Defaults are
-`statusCode=200` and `contentType=application/json`; both can be
-overridden per-request.
+It reads suites in the shape used by [src/webv/test.yaml](src/webv/test.yaml)
+(YAML by `.yaml`/`.yml` extension; JSON otherwise — both formats use the
+same schema), issues HTTP requests against a base URL, and validates
+response status code, content type, and (optionally) body length.
+Defaults are `statusCode=200` and `contentType=application/json`; both
+can be overridden per-request. Content-type is not validated for
+expected-404 entries (the framing — chi default plaintext vs RFC 7807
+— is not a contract worth pinning).
 
 ```bash
 make webv-install  # go install -ldflags ... ./cmd/webv  → ~/go/bin/webv
-make webv-smoke    # one pass against http://127.0.0.1 with src/webv/test.json
+make webv-smoke    # one pass against http://127.0.0.1 with src/webv/test.yaml
 make webv-deploy   # apply the in-cluster Deployment (movies ns, --loop)
 make webv-verify   # tail the pod logs and confirm pass=N fail=0 heartbeat
 make webv-undeploy # delete the load-generator Deployment
@@ -111,7 +114,7 @@ it always exits 0 on signal so K8s does not flag it as failed.
 - **Session 5 (0.5.0):** OpenAPI 3 doc embedded at compile time + Swagger UI at `/swagger`, root redirect, `robots.txt`, JSON request-log middleware.
 - **Session 6 (0.6.0):** Prometheus metrics on `/metrics` (`prometheus/client_golang` v1.23, per-router registry, Go + process collectors, `http_requests_total` / `http_request_duration_seconds` / `http_requests_in_flight` with templated chi route labels). `ServiceMonitor` labeled for the cluster Prometheus operator; `default-deny` + `movies-api` NetworkPolicy pair (Traefik + scrape ingress, DNS egress); container `securityContext` tightened with explicit `runAsGroup` and `seccompProfile: RuntimeDefault`. `internal/httpapi` coverage 92.7 %.
 - **Session 7 (0.7.0):** Grafana 11.3.0 in the `monitoring` namespace, anonymous Viewer for dev, admin password `Passw0rd` injected via Kubernetes `Secret` (dev overlay `secretGenerator`), Ingress pinned to the Traefik `grafana` entrypoint on host port 3000. Prometheus datasource (uid `prometheus`) provisioned via file. The movies-api dashboard is created at boot through the Grafana **HTTP API** (`POST /api/dashboards/db`) by a one-shot bootstrap `Job` running `curlimages/curl` — so the dashboard stays editable + saveable in the UI rather than read-only like a file-provisioned dashboard. The same Job stars the dashboard for admin via `POST /api/user/stars/dashboard/uid/movies-api`.
-- **Session 8 (0.8.0):** `webv` Web Validate-compatible runner ([cmd/webv](src/cmd/webv)) — single-binary CLI with `--url`/`--files`/`--loop`/`--threads`/`--random`/`--duration`/`--verbose`/`--version` flags (each has a short alias), tab-delimited output, per-pass heartbeat, defaults `statusCode=200`/`contentType=application/json` overridable per-request. Same Dockerfile now ships both `/movies-api` and `/webv` plus the suites at `/webv-suites/`. New `benchmark.json` (200 entries spanning `/api/{movies,actors,genres}` plus path-id and query-string variants — all expected 200). In-cluster Deployment under `deploy/webv/` (movies namespace, NetworkPolicy allowing egress only to movies-api on 8080) hits the in-cluster Service in `--loop` and pumps the Active workers / Requests-by-route / p95 panels on the Grafana dashboard. `make webv-install` puts the CLI in `~/go/bin`. §12 inner loop now documented end-to-end.
+- **Session 8 (0.8.0):** `webv` Web Validate-compatible runner ([cmd/webv](src/cmd/webv)) — single-binary CLI with `--url`/`--files`/`--loop`/`--threads`/`--random`/`--duration`/`--verbose`/`--version` flags (each has a short alias), tab-delimited output, per-pass heartbeat, defaults `statusCode=200`/`contentType=application/json` overridable per-request. Loader picks YAML or JSON by file extension (suites at `src/webv/{test,benchmark}.yaml`). Same Dockerfile now ships both `/movies-api` and `/webv` plus the suites at `/webv-suites/`. New `benchmark.yaml` (200 entries spanning `/api/{movies,actors,genres}` plus path-id and query-string variants — all expected 200). In-cluster Deployment under `deploy/webv/` (movies namespace, NetworkPolicy allowing egress only to movies-api on 8080) hits the in-cluster Service in `--loop` and pumps the Active workers / Requests-by-route / p95 panels on the Grafana dashboard. `make webv-install` puts the CLI in `~/go/bin`. §12 inner loop now documented end-to-end.
 
 ## What's deferred
 

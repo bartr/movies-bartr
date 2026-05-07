@@ -23,10 +23,14 @@ func writeFile(t *testing.T, dir, name, content string) string {
 
 func TestLoadSuites_DefaultsAndOverrides(t *testing.T) {
 	dir := t.TempDir()
-	p := writeFile(t, dir, "t.json", `{"requests":[
-		{"path":"/a"},
-		{"path":"/b","validation":{"statusCode":404,"contentType":"text/plain","length":3}}
-	]}`)
+	p := writeFile(t, dir, "t.yaml", `requests:
+- path: /a
+- path: /b
+  validation:
+    statusCode: 404
+    contentType: text/plain
+    length: 3
+`)
 	got, err := loadSuites([]string{p})
 	if err != nil {
 		t.Fatalf("loadSuites: %v", err)
@@ -45,15 +49,27 @@ func TestLoadSuites_DefaultsAndOverrides(t *testing.T) {
 	}
 }
 
+func TestLoadSuites_JSONStillWorks(t *testing.T) {
+	dir := t.TempDir()
+	p := writeFile(t, dir, "t.json", `{"requests":[{"path":"/a"}]}`)
+	got, err := loadSuites([]string{p})
+	if err != nil {
+		t.Fatalf("loadSuites: %v", err)
+	}
+	if len(got) != 1 || got[0].Path != "/a" {
+		t.Errorf("got %+v", got)
+	}
+}
+
 func TestLoadSuites_FileNotFound(t *testing.T) {
-	if _, err := loadSuites([]string{"/no/such/file.json"}); err == nil {
+	if _, err := loadSuites([]string{"/no/such/file.yaml"}); err == nil {
 		t.Fatal("want error, got nil")
 	}
 }
 
-func TestLoadSuites_BadJSON(t *testing.T) {
+func TestLoadSuites_BadYAML(t *testing.T) {
 	dir := t.TempDir()
-	p := writeFile(t, dir, "bad.json", `{not json`)
+	p := writeFile(t, dir, "bad.yaml", "requests: [unclosed")
 	if _, err := loadSuites([]string{p}); err == nil {
 		t.Fatal("want error")
 	}
@@ -61,7 +77,7 @@ func TestLoadSuites_BadJSON(t *testing.T) {
 
 func TestLoadSuites_PathRequired(t *testing.T) {
 	dir := t.TempDir()
-	p := writeFile(t, dir, "x.json", `{"requests":[{"validation":{}}]}`)
+	p := writeFile(t, dir, "x.yaml", "requests:\n- validation: {}\n")
 	if _, err := loadSuites([]string{p}); err == nil {
 		t.Fatal("want error")
 	}
@@ -87,12 +103,14 @@ func TestRunPass_PassAndFail(t *testing.T) {
 
 	dir := t.TempDir()
 	five := 5
-	p := writeFile(t, dir, "t.json", `{"requests":[
-		{"path":"/ok"},
-		{"path":"/wrong-code"},
-		{"path":"/wrong-type"},
-		{"path":"/wrong-len","validation":{"length":99}}
-	]}`)
+	p := writeFile(t, dir, "t.yaml", `requests:
+- path: /ok
+- path: /wrong-code
+- path: /wrong-type
+- path: /wrong-len
+  validation:
+    length: 99
+`)
 	_ = five
 	reqs, err := loadSuites([]string{p})
 	if err != nil {
@@ -129,9 +147,13 @@ func TestRunPass_Threads(t *testing.T) {
 	}))
 	defer srv.Close()
 	dir := t.TempDir()
-	p := writeFile(t, dir, "t.json", `{"requests":[
-		{"path":"/a"},{"path":"/b"},{"path":"/c"},{"path":"/d"},{"path":"/e"}
-	]}`)
+	p := writeFile(t, dir, "t.yaml", `requests:
+- path: /a
+- path: /b
+- path: /c
+- path: /d
+- path: /e
+`)
 	reqs, _ := loadSuites([]string{p})
 	w := newWriter(io.Discard, false)
 	opts := options{url: srv.URL, threads: 3, random: true}
@@ -148,7 +170,7 @@ func TestRunUntilDone_DurationStopsLoop(t *testing.T) {
 	}))
 	defer srv.Close()
 	dir := t.TempDir()
-	p := writeFile(t, dir, "t.json", `{"requests":[{"path":"/a"}]}`)
+	p := writeFile(t, dir, "t.yaml", "requests:\n- path: /a\n")
 	reqs, _ := loadSuites([]string{p})
 	w := newWriter(io.Discard, false)
 	opts := options{url: srv.URL, threads: 1, loop: true, duration: 50 * time.Millisecond}

@@ -4,15 +4,18 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
+
+	"gopkg.in/yaml.v3"
 )
 
-// Request mirrors a single entry of the test.json `requests` array.
+// Request mirrors a single entry of the test.yaml/test.json `requests` array.
 // Defaults: Method=GET, Validation.StatusCode=200, Validation.ContentType=application/json.
 type Request struct {
-	Path       string      `json:"path"`
-	Method     string      `json:"method,omitempty"`
-	Validation *Validation `json:"validation,omitempty"`
+	Path       string      `json:"path"       yaml:"path"`
+	Method     string      `json:"method,omitempty"     yaml:"method,omitempty"`
+	Validation *Validation `json:"validation,omitempty" yaml:"validation,omitempty"`
 
 	// Resolved (non-pointer, post-defaults) — populated by loadSuites.
 	expectStatus int
@@ -21,15 +24,36 @@ type Request struct {
 	source       string
 }
 
-// Validation is the per-request expectations block in the JSON file.
+// Validation is the per-request expectations block in the suite file.
 type Validation struct {
-	StatusCode  *int    `json:"statusCode,omitempty"`
-	ContentType *string `json:"contentType,omitempty"`
-	Length      *int    `json:"length,omitempty"`
+	StatusCode  *int    `json:"statusCode,omitempty"  yaml:"statusCode,omitempty"`
+	ContentType *string `json:"contentType,omitempty" yaml:"contentType,omitempty"`
+	Length      *int    `json:"length,omitempty"      yaml:"length,omitempty"`
 }
 
 type suite struct {
-	Requests []Request `json:"requests"`
+	Requests []Request `json:"requests" yaml:"requests"`
+}
+
+// decodeSuite picks the decoder by file extension. .yaml/.yml use YAML;
+// everything else (and .json) uses strict JSON.
+func decodeSuite(path string, raw []byte) (suite, error) {
+	var s suite
+	switch strings.ToLower(filepath.Ext(path)) {
+	case ".yaml", ".yml":
+		dec := yaml.NewDecoder(strings.NewReader(string(raw)))
+		dec.KnownFields(true)
+		if err := dec.Decode(&s); err != nil {
+			return s, err
+		}
+	default:
+		dec := json.NewDecoder(strings.NewReader(string(raw)))
+		dec.DisallowUnknownFields()
+		if err := dec.Decode(&s); err != nil {
+			return s, err
+		}
+	}
+	return s, nil
 }
 
 func loadSuites(files []string) ([]Request, error) {
@@ -39,10 +63,8 @@ func loadSuites(files []string) ([]Request, error) {
 		if err != nil {
 			return nil, fmt.Errorf("read %s: %w", f, err)
 		}
-		var s suite
-		dec := json.NewDecoder(strings.NewReader(string(raw)))
-		dec.DisallowUnknownFields()
-		if err := dec.Decode(&s); err != nil {
+		s, err := decodeSuite(f, raw)
+		if err != nil {
 			return nil, fmt.Errorf("parse %s: %w", f, err)
 		}
 		for i := range s.Requests {

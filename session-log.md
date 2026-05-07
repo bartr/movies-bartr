@@ -2,7 +2,7 @@
 
 > One entry per session. Frame before, ritual after. The log itself is the experiment evidence.
 >
-> Methodology: [METHODOLOGY.md](METHODOLOGY.md) · Experiment: [EXPERIMENT.md](EXPERIMENT.md) · Spec: [spec.md](spec.md)
+> Methodology: [METHODOLOGY.md](docs/METHODOLOGY.md) · Experiment: [EXPERIMENT.md](docs/EXPERIMENT.md) · Spec: [spec.md](docs/spec.md)
 
 Copy the **Session Template** block below for each new session. Fill in the frame *before* you start, the close fields *after* you tag.
 
@@ -103,7 +103,7 @@ Picked Go 1.26 + chi v5 + `log/slog` + `flag`/env. Shipped a walking skeleton: `
 **Retro (recorded post-tag, pre-session-2)**
 - Everything went very smoothly — RPI artifacts before each phase kept the work mechanical and prevented invented APIs.
 - The frame had **less than 90 minutes of real work** in it. Acceptable for session 1 (walking skeleton always under-scopes), but a signal: future frames can be more ambitious. The two scope-aligned add-ons (`src/` reorg + Traefik Ingress) confirm there was budget left.
-- Convention going forward: **record retro thoughts on the session log before pushing the next version's branch.** This keeps honest signal next to the evidence and satisfies [EXPERIMENT.md](EXPERIMENT.md) ground rule 6 (honest retros).
+- Convention going forward: **record retro thoughts on the session log before pushing the next version's branch.** This keeps honest signal next to the evidence and satisfies [EXPERIMENT.md](docs/EXPERIMENT.md) ground rule 6 (honest retros).
 - Implication for session 2: aim higher. The store + indexes are the bare minimum; coverage gates on `internal/config` were already on the parking lot — fold them in unless the fit check says cut.
 
 ---

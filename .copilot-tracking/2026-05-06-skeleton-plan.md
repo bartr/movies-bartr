@@ -3,7 +3,7 @@
 **Date:** 2026-05-06
 **Phase constraint:** Plan only. Numbered, checkbox-able tasks with file targets and exit criteria. No code.
 
-Inputs: [research](2026-05-06-stack-research.md), [spec.md](../spec.md), [README.md](../README.md).
+Inputs: [research](2026-05-06-stack-research.md), [spec.md](../docs/spec.md), [README.md](../README.md).
 
 ## Tasks
 

@@ -2,7 +2,7 @@
 
 > Living document for participants of the sessions+RPI experiment. Updated each session.
 >
-> Spec: [spec.md](spec.md) · Methodology: [METHODOLOGY.md](METHODOLOGY.md) · Sessions: [session-log.md](session-log.md)
+> Spec: [spec.md](docs/spec.md) · Methodology: [METHODOLOGY.md](docs/METHODOLOGY.md) · Sessions: [session-log.md](session-log.md)
 
 ## Stack (Session 1)
 

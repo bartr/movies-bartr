@@ -36,9 +36,9 @@ You track these by simply **using the repo as designed.** No extra reporting too
 | Signal | Where it lives | Why we care |
 |---|---|---|
 | **Session count** | git tags (`0.1.0`, `0.2.0`, …, `1.0.0`) | The headline number. How many sessions to ship the bar? |
-| **Session duration** | timestamps in [`session-log.md`](session-log.md) (frame time → close time) | Did sessions stay in the 90–120 minute bound? |
-| **Fit-check decisions** | recorded in each session block of [`session-log.md`](session-log.md) | Were plans realistic? Where did frames over-promise? |
-| **Drift incidents** | "drift moments" field per session in [`session-log.md`](session-log.md) | Was scope held? |
+| **Session duration** | timestamps in [`session-log.md`](../session-log.md) (frame time → close time) | Did sessions stay in the 90–120 minute bound? |
+| **Fit-check decisions** | recorded in each session block of [`session-log.md`](../session-log.md) | Were plans realistic? Where did frames over-promise? |
+| **Drift incidents** | "drift moments" field per session in [`session-log.md`](../session-log.md) | Was scope held? |
 | **RPI artifacts** | `.copilot-tracking/` | Evidence that Research happened before Plan; Plan before Implement. |
 | **Stack chosen** | first session's research artifact | For cross-run comparison. |
 | **Time-to-1.0.0** | git: tag date of `1.0.0` minus first commit | The summary metric. |

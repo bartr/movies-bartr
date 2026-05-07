@@ -259,4 +259,66 @@ Shipped Prometheus metrics end-to-end. `internal/httpapi/metrics.go` builds a pe
 
 ---
 
+## Session 7 — 2026-05-07
+
+**Frame**
+- Goal: Add Grafana to the cluster in the existing `monitoring` namespace, anonymous viewer for dev, admin password `Passw0rd` delivered via a Kubernetes `Secret`. Provision the `prometheus` datasource via file. Create the movies-api dashboard at boot via the **Grafana HTTP API** (not file provisioning, so the operator can edit + save), and add it to the admin's favorites — also via API. Ingress pinned to the existing Traefik `grafana` entrypoint (host port 3000). Tag `0.7.0`.
+- Out of scope: NetworkPolicy for the `monitoring` namespace; persistent volume for Grafana; TLS / OAuth / SSO; soak / bench / Web Validate runner; backporting NetworkPolicy changes from `movies` to `monitoring`.
+- Failure condition: dashboard surfaces as "provisioned" / read-only in the UI; datasource missing or pointing at the wrong URL; admin password baked into a manifest in plaintext outside a Secret; Ingress hijacks another Traefik entrypoint; or no live data on the dashboard panels.
+
+**Start time:** 03:27 UTC
+
+**RPI cycle**
+- Research: `.copilot-tracking/2026-05-07-grafana-research.md`
+- Plan: `.copilot-tracking/2026-05-07-grafana-plan.md`
+- Changes: `.copilot-tracking/2026-05-07-grafana-changes.md`
+- Review: `.copilot-tracking/2026-05-07-grafana-review.md`
+
+**Fit check**
+- Will this plan fit in 90–120 min? yes.
+- Smallest cut if no: drop the favorite-star API call — the editable dashboard + datasource + anonymous viewer alone meet spec §7.3.
+- Decision: proceed.
+
+**During**
+- Drift moments: none in headline frame. The base deliverable (Grafana + datasource + dashboard via API + favorite + Ingress on 3000) shipped on the first deploy pass after one bootstrap-Job rewrite (alpine + apk → curlimages/curl, see "Manual interventions" below).
+- Parking lot: NetworkPolicy for the `monitoring` namespace; consider a `prod` overlay that flips anonymous Viewer off and provides its own admin Secret.
+
+- Manual interventions / back-and-forth with the user (recorded inline so future agents see what the frame *should* have anticipated):
+  1. **Bootstrap Job container choice.** First pass used `alpine:3.20` + `apk add curl jq` and CrashLoopBackOff'd because the non-root pod can't write to apk's database. Switched to `curlimages/curl:8.10.1` and replaced `jq` with a `printf` + `cat` JSON wrapper — RO rootfs + tmpfs `/tmp` works clean.
+  2. **Dashboard panel polish, four rounds.** User caught: (a) "5xx rate" showing "No data" instead of 0 on an idle service → expression `sum(rate(...)) or vector(0)` plus `noValue: "0"` on stat defaults; (b) p95 latency rendering `x.0000 ms` → unit `s` decimals 4 → unit `ms` decimals 0, expression multiplied by 1000; (c) "Goroutines" was implementer-jargon → renamed **Active workers** with a business-friendly tooltip; (d) Workers panel briefly showed two `9` lines during rolling-update overlap → wrapped expression in `sum()`.
+  3. **Tracked routes.** User asked to scope metrics to `/api/*` and to two segments only (so `/api/movies/{id}` and `/api/movies` collapse to `/api/movies`). Replaced the chi `RoutePattern()` label with a small `apiRouteLabel()` helper; added two new tests (`TestMetrics_NonAPIRoutesNotMeasured`, table-driven `TestAPIRouteLabel`); tightened the dashboard PromQL with `route=~"/api/.*"` so historical pre-filter series don't show up either.
+  4. **Favorites for non-admin.** Anonymous Grafana sessions share a synthetic identity and can't persist stars — the user spotted the dashboard wasn't appearing under "Starred". Two fixes layered: (i) `PUT /api/org/preferences` with `{"homeDashboardUID":"movies-api"}` so the dashboard is the org home page for *everyone* (admin + anon at `/`); (ii) bootstrap Job now also creates a real `reader` user (Viewer role, `Passw0rd`) via `POST /api/admin/users` (idempotent) and stars the dashboard for them via basic auth — anyone who wants persistent favorites logs in as `reader`.
+  5. **Stale Prometheus series.** After the `/api/*` filter shipped, the dashboard still showed `/healthz`, `unmatched`, and `/api/movies/{id}` lines from before the change because of the 7-day retention. User asked for the admin API path: enabled `spec.enableAdminAPI: true` on the Prometheus CR and added `make prom-tombstone-stale-routes` (POSTs `delete_series` + `clean_tombstones` for the four `http_*` metric names with `route!~"/api/.*"`). Recorded the recipe in `/memories/repo/bartr-movies-notes.md`.
+  6. **Persistent state.** User asked for PVCs on both Prometheus and Grafana so restarts don't wipe scrape data, saved dashboards, or favorites. Prometheus CR got `spec.storage.volumeClaimTemplate` (5Gi RWO `local-path`); Grafana got a sibling `grafana-data` PVC (2Gi RWO) replacing the emptyDir. Verified across a `kubectl rollout restart deploy/grafana`: admin stars, reader stars, and org home preferences all survived.
+  7. **Branch discipline.** User caught (twice now) that the agent had been editing on `main` instead of branching first. Recorded "Branch FIRST" rule in repo memory; cut over to `session/0.7.0-grafana` mid-flight without losing work.
+  8. **Auto-close prevented.** Per the existing repo-memory rule, did not auto-merge or auto-tag — waited for the user to direct the close in this turn.
+
+**Close ritual**
+- [x] Tests green (`make test` race-clean; `internal/httpapi` covers the new `apiRouteLabel` helper + the non-`/api/*` skip path)
+- [x] In-cluster verify: `make verify` (movies 0.7.0), `make grafana-verify` (six checks including a live PromQL `up` query through the Grafana datasource proxy), restart-durability check (admin/reader stars + org home preferences survived a Grafana pod recreate)
+- [x] User review on the PR
+- [x] FF-merge (`gh pr merge --rebase --delete-branch`)
+- [x] Tag (`git tag 0.7.0 && git push origin 0.7.0`)
+- [x] Repo memory updated (AGENTS.md "where the next session starts" pointer + IMPL-README "what's done" + `/memories/repo/bartr-movies-notes.md` with three new entries: Branch FIRST, Prometheus admin-API tombstoning recipe, Grafana 11 anonymous-stars limitation)
+- [x] Next session starter: Session 8 — Web Validate runner. The cluster has Grafana + Prometheus on PVCs (state survives restarts) and the movies-api dashboard (uid `movies-api`) is the Grafana home page. Web Validate should hit `/api/*` through the Traefik `web` entrypoint; the Active workers / Requests-by-route / p95 panels should light up.
+
+**End time:** 04:03 UTC
+**Total focus minutes:** ~95 (Frame at 03:27 UTC; ~30 min for the original deliverable; ~60 min of layered polish driven by user review — panel UX, label scoping, favorites for non-admin, stale-series tombstoning, PVCs, branch discipline.)
+**Tag shipped:** 0.7.0
+
+**One-paragraph summary**
+Shipped Grafana 11.3.0 in the `monitoring` namespace alongside Prometheus, anonymous Viewer for dev, admin password `Passw0rd` injected via a `secretGenerator`-managed `Secret` (dev overlay only). Ingress pinned to the Traefik `grafana` entrypoint at host port 3000. Prometheus datasource (uid `prometheus`) provisioned via file. The movies-api dashboard is created at boot through Grafana's HTTP API (`POST /api/dashboards/db`) by a one-shot `Job` running `curlimages/curl` — so it stays editable + saveable in the UI rather than read-only like a file-provisioned dashboard. The same Job stars it for admin, creates a Viewer-role `reader` user and stars it for them too, and sets it as the org home dashboard via `PUT /api/org/preferences` so every visitor (admin, reader, anon) lands on it at `/`. Six panels driven by 0.6.0's metrics: Total requests, In-flight, 5xx rate (`or vector(0)` so it never reads "No data"), Active workers (renamed from Goroutines, `sum()` to collapse rolling-update overlap), Requests/sec by route, p95 latency by route in milliseconds. Metrics middleware tightened to record `/api/*` only and collapse the route label to two segments (`/api/movies` covers both list + detail), so cardinality stays bounded and the dashboard mirrors what a business operator cares about. Stale series tombstoning recipe wired up as `make prom-tombstone-stale-routes` with `enableAdminAPI: true` on the Prometheus CR. Both Prometheus (5Gi) and Grafana (2Gi) now use `local-path` PVCs so scrape data, saved dashboards, stars, and org preferences survive pod restarts. Verified live across a Grafana restart.
+
+**Health signal**
+- Framing quality (1–5): 3 — the named deliverables landed on the first pass, but the frame missed three things the user had to surface in review: anonymous-user star limits in Grafana 11, retention-window stale series, and PVC durability. None were scope creep — all were "the frame should have known this". Calibration target for session 8: explicitly enumerate "what state must survive a pod restart" and "what historical noise might confuse the dashboard" as frame items.
+- Drift (yes/no): no — every fixup was inside the headline goal ("Grafana dashboard deployed and viewable from the local cluster").
+- Fit check honest (yes/no): yes for the original frame; the layered polish stretched the session ~30 min beyond the target but was user-directed and review-driven, not agent-initiated drift.
+- Close complete (yes/no): yes — tests · verify · review · merge · tag · memory · paragraph.
+- Process rules recorded (`/memories/repo/bartr-movies-notes.md`):
+  1. Branch FIRST when starting a session on `main`.
+  2. Prometheus admin-API tombstoning recipe (`enableAdminAPI: true` + `delete_series` + `clean_tombstones`) — the right answer when a label-shape change leaves stale series inside the retention window.
+  3. Grafana 11 anonymous stars don't persist; pin the org home dashboard via `/api/org/preferences` AND create a real Viewer user for persistent personal favorites.
+
+---
+
 <!-- Copy the Session Template block above for each new session. -->

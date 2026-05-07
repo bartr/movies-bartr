@@ -110,14 +110,14 @@ it always exits 0 on signal so K8s does not flag it as failed.
 #### Tuning the live load generator without a rebuild
 
 The `args:` are positional in [deploy/webv/base/deployment.yaml](deploy/webv/base/deployment.yaml)
-(0=`--url`, 1=`--files`, 2=`--loop`, 3=`--threads=1`, 4=`--sleep=2`,
+(0=`--url`, 1=`--files`, 2=`--loop`, 3=`--threads=1`, 4=`--sleep=1`,
 5=`--verbose`). Patch a single arg in place to retune rate without
 editing the manifest or rebuilding the image — Kubernetes auto-rolls:
 
 ```bash
-# halve the per-thread sleep -> ~doubles RPS
+# double the per-thread sleep -> ~half the RPS
 kubectl -n movies patch deploy webv --type=json \
-  -p='[{"op":"replace","path":"/spec/template/spec/containers/0/args/4","value":"--sleep=1"}]'
+  -p='[{"op":"replace","path":"/spec/template/spec/containers/0/args/4","value":"--sleep=2"}]'
 
 # bump worker threads to 2
 kubectl -n movies patch deploy webv --type=json \
@@ -127,7 +127,7 @@ kubectl -n movies patch deploy webv --type=json \
 `make webv-deploy` re-syncs from the manifest if you want to drop the
 patch.
 
-## What's done (tag 0.7.0)
+## What's done (tag 0.8.0)
 
 - **Session 1 (0.1.0):** `/version`, `/healthz`, `/readyz` walking skeleton on distroless; non-root, RO root FS, all caps dropped; Kustomize-only manifests; Traefik Ingress on `localhost`.
 - **Session 2 (0.2.0):** `internal/store` with id/genre/year/rating-bucket/actor indexes + `q=` substring search; loader cross-references all four duplicate id fields and gates `/readyz` until the dataset is in memory.

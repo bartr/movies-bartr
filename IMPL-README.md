@@ -92,6 +92,7 @@ CLI flags (each has a short alias):
 | `--threads` `-t`       | concurrent worker goroutines (default 1)                 |
 | `--random`  `-r`       | shuffle requests each pass                               |
 | `--duration` `-d`      | total run time (`30s`, `5m`, `24h`); takes precedence over `--loop` |
+| `--sleep`   `-s`       | sleep N ms between calls on each thread (rate cap)       |
 | `--verbose` `-v`       | log successes too (failures always logged)               |
 | `--version`            | print the shared semver and exit                         |
 

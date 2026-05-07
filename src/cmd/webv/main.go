@@ -50,6 +50,7 @@ type options struct {
 	threads  int
 	random   bool
 	duration time.Duration
+	sleep    time.Duration
 	verbose  bool
 }
 
@@ -59,6 +60,7 @@ func run(args []string, stdout, stderr *os.File) error {
 
 	var opts options
 	var showVersion bool
+	var sleepMs int
 
 	fs.StringVar(&opts.url, "url", "", "base URL to test (http or https)")
 	fs.StringVar(&opts.url, "u", "", "alias for --url")
@@ -72,6 +74,8 @@ func run(args []string, stdout, stderr *os.File) error {
 	fs.BoolVar(&opts.random, "r", false, "alias for --random")
 	fs.DurationVar(&opts.duration, "duration", 0, "total run time, e.g. 30s, 5m, 24h (takes precedence over --loop)")
 	fs.DurationVar(&opts.duration, "d", 0, "alias for --duration")
+	fs.IntVar(&sleepMs, "sleep", 0, "sleep N milliseconds between calls on each thread (0 = no sleep)")
+	fs.IntVar(&sleepMs, "s", 0, "alias for --sleep")
 	fs.BoolVar(&opts.verbose, "verbose", false, "log successes too")
 	fs.BoolVar(&opts.verbose, "v", false, "alias for --verbose")
 	fs.BoolVar(&showVersion, "version", false, "print version and exit")
@@ -110,6 +114,10 @@ func run(args []string, stdout, stderr *os.File) error {
 	if opts.threads < 1 {
 		return fmt.Errorf("--threads must be >= 1, got %d", opts.threads)
 	}
+	if sleepMs < 0 {
+		return fmt.Errorf("--sleep must be >= 0, got %d", sleepMs)
+	}
+	opts.sleep = time.Duration(sleepMs) * time.Millisecond
 
 	suite, err := loadSuites(opts.files)
 	if err != nil {

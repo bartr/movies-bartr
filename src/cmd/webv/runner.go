@@ -110,6 +110,11 @@ func runPass(ctx context.Context, client *http.Client, opts options, reqs []Requ
 				return
 			}
 			doOne(ctx, client, opts.url, &reqs[i], w)
+			if opts.sleep > 0 && i < len(reqs)-1 {
+				if !sleepCtx(ctx, opts.sleep) {
+					return
+				}
+			}
 		}
 		return
 	}
@@ -119,10 +124,17 @@ func runPass(ctx context.Context, client *http.Client, opts options, reqs []Requ
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
+			first := true
 			for r := range ch {
 				if ctx.Err() != nil {
 					return
 				}
+				if !first && opts.sleep > 0 {
+					if !sleepCtx(ctx, opts.sleep) {
+						return
+					}
+				}
+				first = false
 				doOne(ctx, client, opts.url, r, w)
 			}
 		}()
@@ -138,6 +150,19 @@ func runPass(ctx context.Context, client *http.Client, opts options, reqs []Requ
 	}
 	close(ch)
 	wg.Wait()
+}
+
+// sleepCtx blocks for d or until ctx is cancelled. Returns true if the
+// full sleep elapsed, false if ctx was cancelled first.
+func sleepCtx(ctx context.Context, d time.Duration) bool {
+	t := time.NewTimer(d)
+	defer t.Stop()
+	select {
+	case <-t.C:
+		return true
+	case <-ctx.Done():
+		return false
+	}
 }
 
 func doOne(ctx context.Context, client *http.Client, base string, r *Request, w *writer) {

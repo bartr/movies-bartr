@@ -303,7 +303,7 @@ Shipped Prometheus metrics end-to-end. `internal/httpapi/metrics.go` builds a pe
 - [x] Next session starter: Session 8 — Web Validate runner. The cluster has Grafana + Prometheus on PVCs (state survives restarts) and the movies-api dashboard (uid `movies-api`) is the Grafana home page. Web Validate should hit `/api/*` through the Traefik `web` entrypoint; the Active workers / Requests-by-route / p95 panels should light up.
 
 **End time:** 04:03 UTC
-**Total focus minutes:** ~95 (Frame at 03:27 UTC; ~30 min for the original deliverable; ~60 min of layered polish driven by user review — panel UX, label scoping, favorites for non-admin, stale-series tombstoning, PVCs, branch discipline.)
+**Total focus minutes:** ~36 (Frame at 03:27 UTC → tag at 04:03 UTC. Roughly 12 min for the original Grafana + datasource + dashboard deliverable; ~24 min of layered review-driven polish — panel UX, label scoping, favorites for non-admin, stale-series tombstoning, PVCs, branch discipline.)
 **Tag shipped:** 0.7.0
 
 **One-paragraph summary**
@@ -318,6 +318,53 @@ Shipped Grafana 11.3.0 in the `monitoring` namespace alongside Prometheus, anony
   1. Branch FIRST when starting a session on `main`.
   2. Prometheus admin-API tombstoning recipe (`enableAdminAPI: true` + `delete_series` + `clean_tombstones`) — the right answer when a label-shape change leaves stale series inside the retention window.
   3. Grafana 11 anonymous stars don't persist; pin the org home dashboard via `/api/org/preferences` AND create a real Viewer user for persistent personal favorites.
+
+---
+
+## Session 8 — 2026-05-07
+
+**Frame**
+- Goal: Ship `webv` — a small Web Validate-compatible Go CLI that loads JSON suites in the `test.json` shape and validates HTTP responses (status code, content type, optional body length). Same module + same shared `internal/version` as movies-api, installable to `~/go/bin` via `make webv-install`. Flags `--url|-u --files|-f --loop|-l --threads|-t --random|-r --duration|-d --verbose|-v --version` all wired up. Author a 200-entry `benchmark.json` spanning `/api/{movies,actors,genres}` happy paths. Bake the `webv` binary + suites into the existing movies-api Docker image, deploy the load generator into the `movies` namespace as a `Deployment` running `--loop` so the Grafana panels light up. Document the §12 inner loop end-to-end in IMPL-README. Tag `0.8.0`.
+- Out of scope: Bench tuning (p95 / 500 RPS gates land in 0.9.0); soak / chaos; Web Validate output schema parity beyond what the existing `test.json` uses; richer assertions (regex bodies, JSON path); Prometheus metrics for webv itself.
+- Failure condition: webv CLI doesn't run a successful benchmark from `test.json`; in-cluster pod isn't running in a loop / hits the wrong Service / can't reach movies-api due to NetworkPolicy; `--duration` doesn't override `--loop`; CLI returns non-zero on a normal looping shutdown (would make K8s flag the pod as failed); JSON files aren't bundled into the image; or the inner-loop section of IMPL-README doesn't actually walk a new participant from `make test` to `make webv-deploy`.
+
+**Start time:** 04:08 UTC
+
+**RPI cycle**
+- Research: skipped — webv scope is small enough (~3 files) and the JSON shape is already pinned by the existing `test.json` at the repo root.
+- Plan: implicit in the user's scope list; fold straight into changes.
+- Changes: this session-log entry + the diff on `session/0.8.0-WebV`.
+- Review: this entry's Close ritual + `make webv-verify` log evidence.
+
+**Fit check**
+- Will this plan fit in 90–120 min? yes — single-package CLI, no new dependencies, the in-cluster wiring rides on the existing movies-api image.
+- Smallest cut if no: ship CLI + `make webv-install` + benchmark.json only; defer the in-cluster Deployment to a follow-up.
+- Decision: proceed.
+
+**During**
+- Drift moments: none. One bug caught at deploy time: webv was pointing at `http://movies-api.movies.svc.cluster.local` (port 80 default) instead of the Service's actual `:8080`. Fixed in the Deployment manifest, redeployed, traffic flowed.
+- Parking lot: write a `make webv-bench` target that runs a fixed `--duration` and asserts a pass-rate threshold; add JSON-output mode for CI consumption; revisit when Bench tuning lands in 0.9.0.
+
+**Close ritual**
+- [x] Tests green (`go test -race ./...` across the module; new `cmd/webv` tests cover suite loader defaults+overrides, file-not-found, bad JSON, missing-path, pass/fail mix across status/content-type/length, multi-thread, and `--duration`-bounded `--loop`).
+- [x] Local benchmark green (`webv --url http://localhost --files src/webv/benchmark.json --threads 4` → `# summary pass=200 fail=0`).
+- [x] In-cluster verify (`make webv-deploy` → pod Running; `kubectl logs -l app.kubernetes.io/name=webv` shows `# pass complete pass=N fail=6` heartbeat lines marching forward — the 6 failures are first-pass connection-refused races during the movies-api rolling update; subsequent passes are clean. `http_requests_total` on movies-api shows 195 k+ requests across `/api/{movies,actors,genres}`, confirming traffic reaches the API through the in-namespace ClusterIP and not Traefik).
+- [x] Inner loop documented in IMPL-README (§12) — five-step loop + a webv subsection with the full flag table and the four `make webv-*` targets.
+- [ ] User review on the PR
+- [ ] FF-merge + tag (held per repo memory rule: don't auto-merge / auto-tag).
+
+**End time:** 04:30 UTC
+**Total focus minutes:** ~22 (Frame at 04:08 UTC → in-cluster `# pass complete` heartbeat green at ~04:30 UTC.)
+**Tag shipped:** 0.8.0 (pending user review)
+
+**One-paragraph summary**
+Shipped `webv` — a 200-line Go CLI living at `src/cmd/webv/` that loads JSON suites in the `test.json` shape, sequentially or concurrently issues `GET` (default) requests against a base URL, and validates response `statusCode` (default 200), `contentType` (default `application/json`, prefix-matched so `application/json; charset=utf-8` passes), and optional `length`. Flags `--url|-u --files|-f --loop|-l --threads|-t --random|-r --duration|-d --verbose|-v --version` all wired with short aliases; `--files` accepts repeats and comma-separated values; `--duration` takes precedence over `--loop` (whichever fires first stops the run). Output is one tab-delimited record per logged request (failures always; successes only with `--verbose`) plus a `# pass complete pass=N fail=N` heartbeat at the end of every pass and a `# summary` line on shutdown. Process always exits 0 on a normal shutdown so K8s does not flag a `--loop` pod as failed; setup errors (file not found, bad JSON, missing required flag) exit non-zero. The `internal/version.Version` symbol is shared with movies-api so a single `VERSION=X.Y.Z` build flag stamps both binaries. Authored a 200-entry `src/webv/benchmark.json` spanning `/api/movies`, `/api/actors`, `/api/genres`, path-id detail routes for both, and `genre`/`year`/`actorId`/`q`/`rating`/pagination query strings — every entry expected 200. The single existing Dockerfile now builds both `/movies-api` and `/webv` and copies the suites at `/webv-suites/` so the in-cluster `deploy/webv/` Deployment is just `image: movies-api:0.8.0` + `command: ["/webv"]`. NetworkPolicy: a new `webv` policy denies inbound and only allows egress to DNS + the movies-api pods on 8080; the existing `movies-api` ingress rule was widened to also accept the `webv` pod label. Makefile gains `webv-install` (`go install` with version ldflags into `~/go/bin`), `webv-smoke`, `webv-deploy`, `webv-verify`, `webv-undeploy`. IMPL-README §12 now walks the five-step inner loop end-to-end with a webv subsection (flag table + four targets). Verified: local CLI hits a fresh movies-api 200/200, in-cluster pod logs `# pass complete pass=...` heartbeats indefinitely, movies-api `/metrics` shows 100 k+ requests across `/api/*` confirming the Active workers / Requests-by-route / p95 panels on the Grafana dashboard are now driven from inside the cluster.
+
+**Health signal**
+- Framing quality (1–5): pending user review.
+- Drift (yes/no): no — single port-mismatch fix at deploy time, surfaced by `make webv-verify`.
+- Fit check honest (yes/no): yes — the named cut ("ship CLI + install + benchmark.json only") was real, did not need to fire.
+- Close complete (yes/no): pending — review + merge + tag held until user signs off (repo-memory rule).
 
 ---
 

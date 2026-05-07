@@ -1,0 +1,28 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: prometheus
+  namespace: monitoring
+  labels:
+    app.kubernetes.io/name: prometheus
+  annotations:
+    # k3s' Traefik chart has a dedicated `prometheus` entrypoint bound to
+    # host port 9090 (see HelmChartConfig kube-system/traefik). Pinning
+    # the router to that entrypoint means this Ingress only answers on
+    # :9090 and never collides with movies-api on :80.
+    traefik.ingress.kubernetes.io/router.entrypoints: prometheus
+spec:
+  ingressClassName: traefik
+  rules:
+    # No host filter — reach Prometheus directly via:
+    #   http://localhost:9090/
+    #   http://<host-ip>:9090/
+    - http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: prometheus
+                port:
+                  number: 9090

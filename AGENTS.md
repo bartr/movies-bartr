@@ -26,6 +26,23 @@
 - Errors for `/api/*` will return `application/problem+json` (RFC 7807) — landing in session 4.
 - Effective config logged once at info on startup (spec §11).
 
+## Cluster facts (this host)
+
+- Traefik entrypoints (declared by the `kube-system/traefik` HelmChartConfig — already on the cluster, not managed by this repo). Each entrypoint is published on the listed host port, so an Ingress pinned to it needs **no host header**:
+
+  | Entrypoint   | Host port | Used by                       |
+  |--------------|-----------|-------------------------------|
+  | `web`        | 80        | `movies-api` (`Host: localhost`) |
+  | `websecure`  | 443       | TLS (unused here)             |
+  | `prometheus` | 9090      | `deploy/prometheus` Ingress   |
+  | `grafana`    | 3000      | reserved for session 7        |
+  | `vllm`       | 8000      | other workload on this host   |
+  | `cllm`       | 8088      | other workload on this host   |
+  | `ask`        | 8008      | other workload on this host   |
+
+  Pin to a specific entrypoint with the annotation `traefik.ingress.kubernetes.io/router.entrypoints: <name>` on the Ingress.
+- On this box, `localhost` resolves to `::1` and the k3s CNI hostport DNAT is IPv4-only. Use `127.0.0.1` (or the host's LAN IP) in verify scripts.
+
 ## Where the next session starts
 
 After tag `0.6.0`: `/metrics` on the same 8080 port, `prometheus/client_golang` v1.23 with a per-router registry; Go + process collectors plus `http_requests_total`, `http_request_duration_seconds`, `http_requests_in_flight` keyed by templated chi route. `ServiceMonitor` labeled `monitoring.coreos.com/instance: prometheus` for the cluster Prometheus operator. `default-deny` + `movies-api` `NetworkPolicy` pair locks the namespace down to Traefik + scrape ingress + DNS egress. Container `securityContext` now sets `runAsGroup` and `seccompProfile: RuntimeDefault` explicitly. `internal/httpapi` coverage 92.7 %. **Session 7** picks Grafana + provisioned dashboard (the cluster `default/prometheus` instance has been 0/1 for a while — restoring it is a tactical pre-step, not a frame-buster).

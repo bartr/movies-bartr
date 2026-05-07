@@ -1,0 +1,250 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Movies API",
+    "description": "Read-only catalog of movies, actors, and genres. See docs/spec.md for the full contract.",
+    "version": "0.5.0",
+    "license": { "name": "MIT" }
+  },
+  "servers": [
+    { "url": "/", "description": "This server" }
+  ],
+  "tags": [
+    { "name": "movies" },
+    { "name": "actors" },
+    { "name": "genres" },
+    { "name": "system" }
+  ],
+  "paths": {
+    "/api/movies": {
+      "get": {
+        "tags": ["movies"],
+        "summary": "List movies",
+        "parameters": [
+          { "$ref": "#/components/parameters/Q" },
+          { "$ref": "#/components/parameters/Genre" },
+          { "$ref": "#/components/parameters/Year" },
+          { "$ref": "#/components/parameters/Rating" },
+          { "$ref": "#/components/parameters/ActorId" },
+          { "$ref": "#/components/parameters/PageNumber" },
+          { "$ref": "#/components/parameters/PageSize" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Page of movies (filtered + paged).",
+            "content": {
+              "application/json": {
+                "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Movie" } }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/Problem" },
+          "503": { "$ref": "#/components/responses/Problem" }
+        }
+      }
+    },
+    "/api/movies/{id}": {
+      "get": {
+        "tags": ["movies"],
+        "summary": "Get a movie by id",
+        "parameters": [
+          {
+            "name": "id", "in": "path", "required": true,
+            "schema": { "type": "string", "pattern": "^tt[0-9]{5,9}$" },
+            "example": "tt0000001"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Movie",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Movie" } } }
+          },
+          "400": { "$ref": "#/components/responses/Problem" },
+          "404": { "$ref": "#/components/responses/Problem" },
+          "503": { "$ref": "#/components/responses/Problem" }
+        }
+      }
+    },
+    "/api/actors": {
+      "get": {
+        "tags": ["actors"],
+        "summary": "List actors",
+        "parameters": [
+          { "$ref": "#/components/parameters/Q" },
+          { "$ref": "#/components/parameters/PageNumber" },
+          { "$ref": "#/components/parameters/PageSize" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Page of actors.",
+            "content": {
+              "application/json": {
+                "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Actor" } }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/Problem" },
+          "503": { "$ref": "#/components/responses/Problem" }
+        }
+      }
+    },
+    "/api/actors/{id}": {
+      "get": {
+        "tags": ["actors"],
+        "summary": "Get an actor by id",
+        "parameters": [
+          {
+            "name": "id", "in": "path", "required": true,
+            "schema": { "type": "string", "pattern": "^nm[0-9]{5,9}$" },
+            "example": "nm0000001"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Actor",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Actor" } } }
+          },
+          "400": { "$ref": "#/components/responses/Problem" },
+          "404": { "$ref": "#/components/responses/Problem" },
+          "503": { "$ref": "#/components/responses/Problem" }
+        }
+      }
+    },
+    "/api/genres": {
+      "get": {
+        "tags": ["genres"],
+        "summary": "List all genres",
+        "responses": {
+          "200": {
+            "description": "Sorted, distinct genre names.",
+            "content": {
+              "application/json": {
+                "schema": { "type": "array", "items": { "type": "string" } }
+              }
+            }
+          },
+          "503": { "$ref": "#/components/responses/Problem" }
+        }
+      }
+    },
+    "/healthz": {
+      "get": {
+        "tags": ["system"],
+        "summary": "Liveness probe (plaintext)",
+        "responses": {
+          "200": {
+            "description": "pass",
+            "content": { "text/plain; charset=utf-8": { "schema": { "type": "string" } } }
+          }
+        }
+      }
+    },
+    "/readyz": {
+      "get": {
+        "tags": ["system"],
+        "summary": "Readiness probe (plaintext)",
+        "responses": {
+          "200": {
+            "description": "pass",
+            "content": { "text/plain; charset=utf-8": { "schema": { "type": "string" } } }
+          },
+          "503": {
+            "description": "not ready",
+            "content": { "text/plain; charset=utf-8": { "schema": { "type": "string" } } }
+          }
+        }
+      }
+    },
+    "/version": {
+      "get": {
+        "tags": ["system"],
+        "summary": "Build semver (plaintext)",
+        "responses": {
+          "200": {
+            "description": "Semver, no surrounding whitespace beyond a single trailing newline.",
+            "content": { "text/plain; charset=utf-8": { "schema": { "type": "string", "example": "0.5.0\n" } } }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "parameters": {
+      "Q":          { "name": "q",          "in": "query", "schema": { "type": "string", "minLength": 2, "maxLength": 20 } },
+      "Genre":      { "name": "genre",      "in": "query", "schema": { "type": "string", "minLength": 3, "maxLength": 20 } },
+      "Year":       { "name": "year",       "in": "query", "schema": { "type": "integer", "minimum": 1874, "maximum": 2025 } },
+      "Rating":     { "name": "rating",     "in": "query", "schema": { "type": "number", "minimum": 0.0, "maximum": 10.0 } },
+      "ActorId":    { "name": "actorId",    "in": "query", "schema": { "type": "string", "pattern": "^nm[0-9]{5,9}$" } },
+      "PageNumber": { "name": "pageNumber", "in": "query", "schema": { "type": "integer", "minimum": 1, "maximum": 10000, "default": 1 } },
+      "PageSize":   { "name": "pageSize",   "in": "query", "schema": { "type": "integer", "minimum": 1, "maximum": 1000, "default": 25 } }
+    },
+    "responses": {
+      "Problem": {
+        "description": "RFC 7807 problem document.",
+        "content": {
+          "application/problem+json": {
+            "schema": { "$ref": "#/components/schemas/Problem" }
+          }
+        }
+      }
+    },
+    "schemas": {
+      "Movie": {
+        "type": "object",
+        "required": ["id", "title", "year", "genres", "roles"],
+        "properties": {
+          "id":      { "type": "string", "pattern": "^tt[0-9]{5,9}$" },
+          "title":   { "type": "string" },
+          "year":    { "type": "integer" },
+          "runtime": { "type": "integer" },
+          "genres":  { "type": "array", "items": { "type": "string" } },
+          "roles":   { "type": "array", "items": { "$ref": "#/components/schemas/Role" } },
+          "rating":  { "type": "number" },
+          "votes":   { "type": "integer" }
+        }
+      },
+      "Role": {
+        "type": "object",
+        "properties": {
+          "order":      { "type": "integer" },
+          "actorId":    { "type": "string" },
+          "name":       { "type": "string" },
+          "category":   { "type": "string" },
+          "characters": { "type": "array", "items": { "type": "string" } },
+          "job":        { "type": "string" }
+        }
+      },
+      "Actor": {
+        "type": "object",
+        "required": ["id", "name"],
+        "properties": {
+          "id":         { "type": "string", "pattern": "^nm[0-9]{5,9}$" },
+          "name":       { "type": "string" },
+          "birthYear":  { "type": "integer" },
+          "deathYear":  { "type": "integer" },
+          "profession": { "type": "array", "items": { "type": "string" } },
+          "movies":     { "type": "array", "items": { "$ref": "#/components/schemas/MovieRef" } }
+        }
+      },
+      "MovieRef": {
+        "type": "object",
+        "properties": {
+          "movieId": { "type": "string" },
+          "title":   { "type": "string" }
+        }
+      },
+      "Problem": {
+        "type": "object",
+        "description": "RFC 7807 problem document.",
+        "required": ["type", "title", "status"],
+        "properties": {
+          "type":     { "type": "string", "format": "uri", "default": "about:blank" },
+          "title":    { "type": "string" },
+          "status":   { "type": "integer" },
+          "detail":   { "type": "string" },
+          "instance": { "type": "string" }
+        }
+      }
+    }
+  }
+}

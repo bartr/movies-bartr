@@ -53,11 +53,14 @@ func (w *writer) emit(r result) {
 	}
 	w.mu.Lock()
 	defer w.mu.Unlock()
-	fmt.Fprintf(w.out, "%s\t%s\t%d\t%dms\t%s\t%s\t%d\t%s\t%s\n",
+	// Latency rendered as fractional ms with 3 decimals (1 µs precision).
+	// Integer ms truncated everything sub-1ms to "0ms" — useless for an
+	// in-memory API where typical service time is 20–100 µs.
+	fmt.Fprintf(w.out, "%s\t%s\t%d\t%.3fms\t%s\t%s\t%d\t%s\t%s\n",
 		r.when.UTC().Format(time.RFC3339),
 		status,
 		r.code,
-		r.dur.Milliseconds(),
+		float64(r.dur.Microseconds())/1000.0,
 		r.method,
 		r.path,
 		r.bytes,
@@ -177,6 +180,11 @@ func doOne(ctx context.Context, client *http.Client, base string, r *Request, w 
 		w.emit(res)
 		return
 	}
+	// Defensive: tell intermediaries (and any future client cache) not
+	// to serve cached responses. The movies-api itself does no caching,
+	// so this is belt-and-suspenders for accurate latency measurement.
+	req.Header.Set("Cache-Control", "no-cache")
+	req.Header.Set("Pragma", "no-cache")
 	resp, err := client.Do(req)
 	if err != nil {
 		res.errs = "do: " + err.Error()

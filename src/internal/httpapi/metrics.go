@@ -34,9 +34,18 @@ func newMetrics() *metrics {
 		),
 		durations: prometheus.NewHistogramVec(
 			prometheus.HistogramOpts{
-				Name:    "http_request_duration_seconds",
-				Help:    "HTTP request latency in seconds, labeled by method, route template, and status code.",
-				Buckets: prometheus.DefBuckets,
+				Name: "http_request_duration_seconds",
+				Help: "HTTP request latency in seconds, labeled by method, route template, and status code.",
+				// Sub-ms buckets up front: this is an in-memory API
+				// where typical service time is 20–100 µs. The default
+				// Prometheus buckets start at 5 ms which makes p95
+				// indistinguishable across all routes (they all land in
+				// the first bucket). Keeping the higher bands lets
+				// regressions still register.
+				Buckets: []float64{
+					0.0001, 0.00025, 0.0005, 0.001, 0.0025,
+					0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10,
+				},
 			},
 			[]string{"method", "route", "code"},
 		),

@@ -192,7 +192,7 @@ Built `internal/store` with all six required indexes (id, genre, year, rating bu
 - [x] Next session starter: Session 4 — pick OpenAPI + Swagger UI (spec §6 routes `/`, `/swagger`, `/swagger/v1/swagger.json`) **or** Prometheus metrics + `ServiceMonitor` + NetworkPolicy. Bundle adjacent slices to fill 90–120 min; cut at the fit check.
 
 **End time:** 02:31 UTC
-**Total focus minutes:** ~70
+**Total focus minutes:** ~11 between Start and End. The original entry claimed ~70 — that figure was an estimate that didn't match the Start/End math. Bundled sessions 3+4 were squashed into a single commit at 02:29 UTC, so wall-clock pre-commit work is opaque to git; the only defensible duration is the 11-minute Start → End window.
 **Tag shipped:** 0.3.0
 
 **One-paragraph summary**
@@ -203,6 +203,19 @@ Wired `internal/store` to HTTP. `/api/movies`, `/api/movies/{id}`, `/api/actors`
 - Drift (yes/no): no. The image-tag + data-bake edits were forced by the in-cluster verify step in the frame.
 - Fit check honest (yes/no): yes — recorded "proceed" knowing the cut list (defer the negative-case table) was a real fallback.
 - Close complete (yes/no): yes — tests · merge · tag · memory · paragraph.
+
+---
+
+## Session 5 — 2026-05-06 (no entry written at the time)
+
+**Process note (recorded retroactively during session 10):** Tag `0.5.0`
+exists in git (commit `e42f6ac` — "Session 5 (0.5.0): OpenAPI 3 + Swagger
+UI + JSON request log + robots.txt", 21:39:18 -0500 = 02:39 UTC) but no
+session-log entry was filled in. Session 4 was bundled into session 3.
+The frame, RPI artifacts, and close ritual for session 5 were captured
+in the `.copilot-tracking/` files and the commit message at the time;
+this stub exists only so the session sequence is not silently broken
+and the experiment evidence is honest about the gap.
 
 ---
 
@@ -354,7 +367,7 @@ Shipped Grafana 11.3.0 in the `monitoring` namespace alongside Prometheus, anony
 - [x] User review on the PR (run-on-the-cluster session: review happened live in this thread — 404 content-type skip, YAML conversion, --threads=1 + --verbose, --sleep=1 to land 544 RPS).
 - [x] FF-merge + tag 0.8.0
 
-**End time:** 04:30 UTC
+**End time:** 04:30 UTC (success: in-cluster `# pass complete` heartbeat green). Tag commit landed ~13 min later at 04:43:52 UTC after the close-ritual paperwork.
 **Total focus minutes:** ~22 (Frame at 04:08 UTC → in-cluster `# pass complete` heartbeat green at ~04:30 UTC.)
 **Tag shipped:** 0.8.0
 

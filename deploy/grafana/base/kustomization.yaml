@@ -1,0 +1,26 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# Grafana lives in the same `monitoring` namespace as Prometheus
+# (created by deploy/prometheus/base/namespace.yaml). Apply that
+# component first (`make prom-deploy`) — this kustomization does not
+# re-create the namespace.
+namespace: monitoring
+
+resources:
+  - serviceaccount.yaml
+  - configmap-grafana-ini.yaml
+  - configmap-datasource.yaml
+  - pvc.yaml
+  - deployment.yaml
+  - service.yaml
+  - ingress.yaml
+  - job-bootstrap.yaml
+
+# Dashboard JSON wrapped as a ConfigMap so the bootstrap Job can mount
+# and POST it via the Grafana API. Hashed name flows through the Job
+# volume reference automatically.
+configMapGenerator:
+  - name: grafana-dashboard-movies-api
+    files:
+      - dashboards/movies-api.json
